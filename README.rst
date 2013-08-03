@@ -117,7 +117,19 @@ a subtle advantage of, as soon as your program entry has executed, you now have
 a global object which represents the programs configuration state. 
 
 
+Compatibility
+=============
+
+TBA
+
+
+Change log
+==========
+
+
+* not yet released
+
 .. _github.com: https://github.com/mjdorma/funconf
 .. _PyPi: http://pypi.python.org/pypi/funconf
-.. _github.com: https://github.com/aliles/begins
+.. _begins: https://github.com/aliles/begins
 
