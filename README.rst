@@ -6,6 +6,9 @@ seamlessly integrating configuration files into mapping objects which can be
 bound to a function that takes variable keyword arguments. 
 
 
+Project hosting provided by `github.com`_.
+
+
 Install
 =======
 
@@ -18,8 +21,8 @@ or `PyPi`_::
     > pip install funconf 
 
 
-Motivation through example
-==========================
+funconf with begins
+===================
 
 The motivation for funconf was to build a simple file configuration management
 capability that integrates with the command line interface tool `begins`_. 
