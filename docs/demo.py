@@ -1,8 +1,8 @@
 import begin
-import yamlconf
+import funconf
 
 
-config = yamlconf.Config('my.conf')
+config = funconf.Config('my.conf')
 
 
 @begin.subcommand
