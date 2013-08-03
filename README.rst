@@ -115,9 +115,12 @@ If you check help for foo you get the following::
 
 
 Concluding summary:  The default values read into the config object from
-my.conf will be overridden by begins when it passes in new values.  This yields
-a subtle advantage of, as soon as your program entry has executed, you now have
-a global object which represents the programs configuration state. 
+my.conf will be overridden by begins when it passes in user defined option
+values.  This yields a subtle advantage of, as soon as your program entry has
+executed, you now have a simple to use global object which represents the
+programs configuration state. 
+
+See the documentation prologue of `funconf.py`_ for more details.
 
 
 Compatibility
@@ -135,4 +138,5 @@ Change log
 .. _github.com: https://github.com/mjdorma/funconf
 .. _PyPi: http://pypi.python.org/pypi/funconf
 .. _begins: https://github.com/aliles/begins
+.. _funconf.py: https://github.com/mjdorma/funconf/blob/master/funconf.py
 
