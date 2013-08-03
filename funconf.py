@@ -1,6 +1,7 @@
 """Function Configuration.
 
-This module simplifies the management of function's default keyword values.
+This module simplifies the management of function default keyword argument 
+values.
 
 funconf introduces a special decorator function called 'wraps_kwargs'.  This
 decorator makes it possible to dynamically define a fixed number of kwargs for
