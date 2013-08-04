@@ -6,6 +6,9 @@ management capability that integrates with the command line interface tool
 `begins`_. 
 
 
+Walk through
+++++++++++++
+
 Taking this example YAML configuration file `my.conf`_::
 
     $ cat my.conf
@@ -30,37 +33,38 @@ Taking this example YAML configuration file `my.conf`_::
 
 And applying it to this simple program `demo.py`_::
    
-    $ cat demo.py
-
     import begin
-    import funconf 
+    import funconf
 
     config = funconf.Config('my.conf')
 
     @begin.subcommand
     @config.foo
     def foo(**k):
-        """This is the foo code"""
-        print(k)
+        "This is the foo code"
+        print("Foo got %s" % k)
+        print("Config is:")
         print(config)
 
     @begin.subcommand
     @config.bread
     def bread(**k):
-        """This is the bread code"""
-        print(k)
+        "This is the bread code"
+        print("Bread got %s" % k)
+        print("Config is:")
         print(config)
 
     @begin.subcommand
     @config
     def run(**k):
-        """This is the run all code"""
-        print(k)
+        "This is the run command that controls all"
+        print("Run got %s" % k)
+        print("Config is:")
         print(config)
 
     @begin.start
-    def main():
-        """demo program - begins meets funconf"""
+    def entry():
+        "This is a super dooper program..."
         pass
 
 
@@ -81,7 +85,7 @@ You will end up with the following help from the main::
         run            This is the run command that controls all
 
 
-Now you can see how the :py:class:`Config` object has been bound to the
+Now you can see how the :py:class:`funconf.Config` object has been bound to the
 ``run()`` function::
 
     $ python demo.py run -h
@@ -100,8 +104,8 @@ Now you can see how the :py:class:`Config` object has been bound to the
       --bread_milk BREAD_MILK, -b BREAD_MILK
                             (default: fail)
 
-Finally, to see how the :py:class:`ConfigSection` objects foo and bread have
-bound to their respective functions::
+Finally, to see how the :py:class:`funconf.ConfigSection` objects foo and bread
+have bound to their respective functions::
 
     $ python demo.py foo --help
     usage: demo.py foo [-h] [--moo MOO] [--bar BAR]
@@ -114,13 +118,18 @@ bound to their respective functions::
       --bar BAR, -b BAR  (default: 4)
 
 
-:Concluding summary:  The default values read into the config object from
-my.conf will be overridden by begins when it passes in user defined option
+Conclusion
+++++++++++
+
+The default values read into the :py:class:`funconf.Config` object from
+my.conf will be overridden by `begins`_ when it passes in user defined option
 values.  This yields a subtle advantage of, as soon as your program entry has
 executed, you now have a simple to use global object which represents the
 programs configuration state. 
 
 See the documentation prologue of `funconf.py`_ for more details.
+
+
 
 .. _funconf.py: https://github.com/mjdorma/funconf/blob/master/funconf.py
 .. _demo.py: https://github.com/mjdorma/funconf/blob/master/docs/source/demo.py
