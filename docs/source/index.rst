@@ -22,6 +22,7 @@ Project
 
     roadmap.rst
     funconf.rst
+    begins.rst
 
 
 Indices and tables
