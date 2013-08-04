@@ -10,12 +10,12 @@ define a fixed number of kwargs for a function that takes a variable number of
 kwargs.
 
 For configuration, :py:mod:`funconf` borrows from concepts discussed in
-Python's core library ConfigParser.  A configuration in a setup file that
-consists of sections, followed by "option: value" entries maintaining a
-hierarchy of *section:option:value*.
+Python's core library *ConfigParser*.  A configuration consists of sections
+made up of *option:value* entries, or two levels of mappings that take on the
+form *section:option:value*.
 
 The file format YAML has been chosen to allow for option values to exist as
-different types instead of being stuck to string values.
+different types instead of being restricted to string type values.
 
 
 The configuration file
@@ -46,7 +46,7 @@ moo.  bar is an integer value of 4 and moo is a list of strings containing
 ``['how', 'are', 'you']``.  
 
 The above configuration could be generated through a process of adding each
-option: value into a :py:class:`Config` object than casting it to a string. For
+option: value into a :py:class:`Config` object then casting it to a string. For
 example::
 
     config = funconf.Config()
@@ -61,8 +61,8 @@ A configuration object
 ----------------------
 
 The :py:class:`Config` class is the root class container for all of the
-configuration sections.  It implements the MutableMapping type which allows it
-to seamlessly integrate into the :py:func:`wraps_kwargs` function. 
+configuration sections.  It implements the *MutableMapping* type which allows
+it to seamlessly integrate into the :py:func:`wraps_kwargs` function. 
 
 As a dictionary ``dict(config)`` the :py:class:`Config` object looks like::
 
@@ -91,7 +91,7 @@ To access sections and option values the following pattern holds true::
     assert config['bread_milk'] == 'fail'
 
 A section is represented by the :py:class:`ConfigSection` object. This object
-implements the MutableMapping type in the same way the :py:class:`Config`
+implements the *MutableMapping* type in the same way the :py:class:`Config`
 object is implemented and is compatible with the :py:func:`wraps_kwargs`
 function.  The :py:class:`ConfigSection` represented ``str(config.bread)``
 looks like::
@@ -118,7 +118,7 @@ import yaml
 
 
 def wraps_kwargs(fixed_kwargs):
-    """Decorate a function to expose a fixed set of defined key:value pairs. 
+    """Decorate a function to expose a fixed set of defined *key:value* pairs. 
         
     The following example will define a and b for the variable length kwargs 
     input to the function myfunc::
@@ -129,9 +129,9 @@ def wraps_kwargs(fixed_kwargs):
             pass
 
     There is an attempt to implicitly type cast input values if they differ
-    from the type of the default value set in fixed_kwargs and if the type of
-    the input value is an instance of basestring.  The following list details
-    how each type is handled:
+    from the type of the default value found in *fixed_kwargs* and if the type
+    of the input value is an instance of *basestring*.  The following list
+    details how each type is handled:
 
         int, bool, float:
             If the input value string can not be cast into an int, bool, or
@@ -145,9 +145,14 @@ def wraps_kwargs(fixed_kwargs):
             An attempt to convert other types will be made.  If this fails, the
             input value will be passed through in its original string form.
 
-    The 'fixed_kwargs' object is assumed to be a form of MutableMapping.  This
-    allows the wrapper to update the key:value pairs inside of the
-    'fixed_kwargs' object thus capturing the current input values state.
+    The *fixed_kwargs* object needs to satisfy the *MutableMapping* interface
+    definition. When the wrapped function is called the kwargs passed in are
+    used to update the *fixed_kwargs* object. The *fixed_kwargs* object is
+    then passed into the wrapped function i.e. ``wrapped(**fixed_kwargs)``. 
+    
+    :param fixed_kwargs: keyword arguments to be fix into the wrapped function.
+    :type fixed_kwargs: mutable mapping
+    :rtype: decorated function.
     """
     def decorator(func):
         def wrapper(**kwargs):
@@ -170,7 +175,6 @@ def wraps_kwargs(fixed_kwargs):
                             value = vtype(value)
                         except:
                             pass
-                print("setting %s = %s" % (k, value))
                 fixed_kwargs[k] = value 
             return func(**fixed_kwargs)
         functools.update_wrapper(wrapper, func)
@@ -188,6 +192,17 @@ class ConfigAttributeError(AttributeError): pass
 
 
 class ConfigSection(MutableMapping):
+    """The :py:class:`ConfigSection` class is a mutable mapping object that
+    represents the *option:value* items for a configuration section. 
+    
+    The following lists the main features of this class:
+
+    * exposes a configuration *option:value* through a standard implementation
+      of the *MutableMapping* abstract type.
+    * when cast to a string it outputs its state in YAML.
+    * as a decorator it utilises the :py:func:`wraps_kwargs` to change
+      the defaults of a variable keyword argument function.  
+    """
 
     _dirty = None 
     _options = None
@@ -195,14 +210,16 @@ class ConfigSection(MutableMapping):
     _reserved = None
 
     def __init__(self, section, options):
-        """Construct a new ConfigSection object.  
+        """Construct a new :py:class:`ConfigSection` object.  
         
         This object represents a section which contains the mappings between
         the section's options and their respective values. 
        
         :param section: defines the name for this section.
+        :type section: str
         :param options: is the mapping containing an initialised set of
-                        option:values 
+                        *option:values* 
+        :type options: mutable mapping
         """
         self._section = section
         self._options = options
@@ -217,8 +234,9 @@ class ConfigSection(MutableMapping):
         return dir(super(ConfigSection, self)) + self._options.keys()
 
     def __getattribute__(self, y):
-        """Return a option value where y is the 'option' name.  Else, return
-        the value of a reserved word."""
+        """Return a option value where y is the *option* name.  Else, return
+        the value of a reserved word.
+        """
         if y in ConfigSection._reserved:
             return super(ConfigSection, self).__getattribute__(y)
         else:
@@ -242,22 +260,23 @@ class ConfigSection(MutableMapping):
         return self._options.__iter__()
 
     def __len__(self):
-        "Return the number of options defined in this ConfigSection object"
+        """Return the number of options defined in this
+        :py:class:`ConfigSection` object"""
         return len(self._options)
 
     def __setitem__(self, x, y):
-        "Set the option value of y for x where x is 'option'."
+        "Set the option value of y for x where x is *option*."
         self._dirty = True
         self._options[x] = y
 
     def __getitem__(self, y):
-        "Return the option value for y where y is 'option'."
+        "Return the option value for y where y is *option*."
         return self._options[y]
 
     @property
     def dirty(self):
         """The dirty property is a convenience property which is set when a
-        change has occurred to one of the options under this section.  Once
+        change has occurred to one of the options under this *section*.  Once
         this property is read, it is reset to False.  
 
         This property is particularly useful if you're software system has the
@@ -265,20 +284,23 @@ class ConfigSection(MutableMapping):
         that you no longer need to remember the state of the options, you just
         need to know that when the dirty property is set, there has been a
         change in the configuration for this section. 
+
+        :rtype: boolean value of dirty.
         """
         self._dirty, d = False, self._dirty
         return d
 
     def __call__(self, func):
-        """The ConfigSection object can be used as a function decorator.  
+        """The :py:class:`ConfigSection` object can be used as a function
+        decorator.  
         
         By decorating a function with variable keyword arguments you're
         function's signature will be changed to a fixed set keyword argument
-        with the default values defined in this ConfigSection object.  When
-        you're function is called, the values passed in will be set inside of
-        this ConfigSection object (which is also reflected when accessing
-        options through the Config), thus maintaining a simple to use global
-        configuration state.
+        with the default values defined in this :py:class:`ConfigSection`
+        object.  When you're function is called, the values passed in will be
+        set inside of this :py:class:`ConfigSection` object (which is also
+        reflected when accessing options through the :py:class:`Config`), thus
+        maintaining a simple to use global configuration state.
         
         For example::
             
@@ -288,9 +310,10 @@ class ConfigSection(MutableMapping):
             def func(**k):
                 pass
 
-        :param func: The variable keyword arguments function to be wrapped
-        :rtype: A wrapped function with fixed kwargs bound to this ConfigSection
-                object.
+        :param func: function to be wrapped.
+        :type func: variable keyword argument function 
+        :rtype: wrapped function with fixed kwargs bound to this 
+                :py:class:`ConfigSection` object.
         """
         return wraps_kwargs(self)(func)
 
@@ -299,7 +322,6 @@ ConfigSection._reserved = set(dir(ConfigSection))
 
 
 class Config(MutableMapping):
-
     """The Config class is the root container that represents configuration
     state set programmatically or read in from YAML config files. 
     
@@ -308,7 +330,7 @@ class Config(MutableMapping):
     * aggregates :py:class:`ConfigSection` objects that are accessible through
       attributes.
     * exposes a translation of the configuration into section_option:value
-      through a standard implementation of the MutableMapping abstract type.
+      through a standard implementation of the *MutableMapping* abstract type.
     * when cast to a string it outputs its state in YAML.
     * as a decorator it utilises the :py:func:`wraps_kwargs` to change
       the defaults of a variable keyword argument function.  
@@ -324,8 +346,9 @@ class Config(MutableMapping):
         This is the root object for a function configuration set.  It is the
         container for the configuration sections.
 
-        :param filenames: A list of filenames to read in configuration and
-                          initialise this object with. 
+        :param filenames: filenames to read in configuration and initialise
+                          this object with. 
+        :type filenames: list of file paths
         """
         self._sections = {}
         self._lookup = {}
@@ -340,7 +363,10 @@ class Config(MutableMapping):
         and all existing configuration files in the list will be read.  A
         single filename may also be given.
 
-        Return list of successfully read files.
+        :param filenames: filenames to read in configuration and update this
+                          object with. 
+        :type filenames: list of file paths
+        :rtype: list of successfully read files.
         """
         if isinstance(filenames, basestring):
             filenames = [filenames]
@@ -355,8 +381,11 @@ class Config(MutableMapping):
         return read_ok
 
     def load(self, stream):
-        """Parse the first YAML document from stream than load the
-        section:option:value elements into this Config object.
+        """Parse the first YAML document from stream then load the
+        *section:option:value* elements into this :py:class:`Config` object.
+
+        :param stream: the configuration to be loaded using ``yaml.load``.
+        :type stream: stream object
         """
         for section, options in yaml.load(stream).items():
             for option, value in options.items():
@@ -373,7 +402,9 @@ class Config(MutableMapping):
             print(dir(funconf.ConfigOption))
 
         :param section: Name of the section to add the option into.
+        :type section: str
         :param option:  Name of the option.
+        :type option: str
         :param value:   Value assigned to this option.
         """
         if section in Config._reserved:
@@ -397,7 +428,7 @@ class Config(MutableMapping):
         return dir(super(Config, self)) + self._sections.keys()
 
     def __getattribute__(self, y):
-        """Return a section where y is the 'section' name.  Else, return the
+        """Return a section where y is the *section* name.  Else, return the
         value of a reserved word."""
         if y in Config._reserved:
             return super(Config, self).__getattribute__(y)
@@ -418,15 +449,15 @@ class Config(MutableMapping):
         raise NotImplementedError("Configuration can only be updated or added")
 
     def __iter__(self):
-        "Iterate all of the 'section_option' keys."
+        "Iterate all of the *section_option* keys."
         return self._lookup.__iter__()
 
     def __len__(self):
-        "Return the number of options defined in this Config object"
+        "Return the number of options defined in this :py:class:`Config` object"
         return len(self._lookup)
 
     def __setitem__(self, x, y):
-        "Set the option value of y for x where x is 'section_option'."
+        "Set the option value of y for x where x is *section_option*."
         if x not in self._lookup:
             raise ValueError("There is no section for '%s'" % x)
         s, option = self._lookup[x]
@@ -436,7 +467,7 @@ class Config(MutableMapping):
         section[option] = y
 
     def __getitem__(self, y):
-        "Return the option value for y where y is 'section_option'."
+        "Return the option value for y where y is *section_option*."
         if y not in self._lookup:
             raise ValueError("There is no section for '%s'" % y)
         s, option = self._lookup[y]
@@ -444,14 +475,14 @@ class Config(MutableMapping):
         return section[option]
 
     def __call__(self, func):
-        """The Config object can be used as a function decorator.  
+        """The :py:class:`Config` object can be used as a function decorator.  
         
         By decorating a function with variable keyword arguments you're
         function's signature will be changed to a fixed set keyword argument
-        with the default values defined in this Config object.  When you're
-        function is called, the values passed in will be set inside of this
-        Config object, thus maintaining a simple to use global configuration
-        state.
+        with the default values defined in this :py:class:`Config` object.
+        When you're function is called, the values passed in will be set inside
+        of this :py:class:`Config` object, thus maintaining a simple to use
+        global configuration state.
         
         For example::
             
@@ -461,9 +492,10 @@ class Config(MutableMapping):
             def func(**k):
                 pass
 
-        :param func: The variable keyword arguments function to be wrapped
-        :rtype: A wrapped function with fixed kwargs bound to this Config
-                object.
+        :param func: function to be wrapped.
+        :type func: variable keyword argument function 
+        :rtype: wrapped function with fixed kwargs bound to this
+                :py:class:`Config` object.
         """
         return wraps_kwargs(self)(func) 
 
