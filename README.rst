@@ -58,22 +58,30 @@ And applying it to this simple program::
     config = funconf.Config('my.conf')
 
     @begin.subcommand
-    @config.foo.wraps
+    @config.foo
     def foo(**k):
         """This is the foo code"""
         print(k)
+        print(config)
 
     @begin.subcommand
-    @config.bread.wraps
+    @config.bread
     def bread(**k):
         """This is the bread code"""
         print(k)
+        print(config)
+
+    @begin.subcommand
+    @config
+    def run(**k):
+        """This is the run all code"""
+        print(k)
+        print(config)
 
     @begin.start
-    @config.wraps
-    def main(**k):
-        """The program"""
-        print(k)
+    def main():
+        """demo program - begins meets funconf"""
+        pass
 
 
 You will end up with the following help from the main::
