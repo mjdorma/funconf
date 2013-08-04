@@ -67,7 +67,7 @@ facilitates the simple wrapping of an entire configuration file into the kwargs
 of a function.  The following example will print out an equivalent dictionary
 to the printout in the previous example.  
 
-    @config.wraps
+    @config
     def myfunc(**kwargs):
         print(kwargs)
 
@@ -89,7 +89,7 @@ a string does the following::
 
 The ConfigSection wraps function can be used in the following way::
 
-    @config.bread.wraps
+    @config.bread
     def myfunc(**kwargs):
         print(kwargs)
 
@@ -145,12 +145,18 @@ def wraps_kwargs(fixed_kwargs):
                     if vtype is list:
                         value = shlex.split(value)
                     elif vtype in [int, bool, float]:
-                        value = vtype(value)
+                        try:
+                            value = vtype(value)
+                        except:
+                            msg = "Can not convert %s='%s' to %s" % (k, value,
+                                    vtype)
+                            raise ValueError(msg)
                     else:
                         try:
                             value = vtype(value)
                         except:
                             pass
+                print("setting %s = %s" % (k, value))
                 fixed_kwargs[k] = value 
             return func(**fixed_kwargs)
         functools.update_wrapper(wrapper, func)
@@ -175,17 +181,30 @@ class ConfigSection(MutableMapping):
     _reserved = None
 
     def __init__(self, section, options):
+        """Construct a new ConfigSection object.  
+        
+        This object represents a section which contains the mappings between
+        the section's options and their respective values. 
+       
+        Arguments
+            section: Defines the name for this section.
+            options: A mapping containing an initialised set of option:values
+        """
         self._section = section
         self._options = options
         self._dirty = True
 
     def __str__(self):
+        "Return a YAML formated string object that represents this object."
         return yaml.dump({self._section: dict(self)}, default_flow_style=False)
 
     def __dir__(self):
+        "Return a list of option names and the Base class attributes."
         return dir(super(ConfigSection, self)) + self._options.keys()
 
     def __getattribute__(self, y):
+        """Return a option value where y is the 'option' name.  Else, return
+        the value of a reserved word."""
         if y in ConfigSection._reserved:
             return super(ConfigSection, self).__getattribute__(y)
         else:
@@ -195,36 +214,69 @@ class ConfigSection(MutableMapping):
             return self._options[y]
 
     def __setattr__(self, x, y):
+        "Only attributes that are a reserved work can be set in this object."
         if x in ConfigSection._reserved:
             super(ConfigSection, self).__setattr__(x, y)
         else:
             self[x] = y
 
     def __delitem__(self, y):
-        self._dirty = True
-        self._options.__delitem__(y)
+        raise NotImplementedError("Configuration can only be updated or added")
 
     def __iter__(self):
+        "Iterate all of the 'option' keys."
         return self._options.__iter__()
 
     def __len__(self):
+        "Return the number of options defined in this ConfigSection object"
         return len(self._options)
 
     def __setitem__(self, x, y):
+        "Set the option value of y for x where x is 'option'."
         self._dirty = True
         self._options[x] = y
 
     def __getitem__(self, y):
+        "Return the option value for y where y is 'option'."
         return self._options[y]
 
     @property
     def dirty(self):
+        """The dirty property is a convenience property which is set when a
+        change has occurred to one of the options under this section.  Once
+        this property is read, it is reset to False.  
+
+        This property is particularly convent if you're software system has the
+        ability to change the configuration state during runtime.  It means
+        that you no longer need to remember the state of the options, you just
+        need to know that when the dirty property is set, there has been a
+        change in the configuration for this section. 
+        """
         self._dirty, d = False, self._dirty
         return d
 
-    @property
-    def wraps(self):
-        return wraps_kwargs(self)
+    def __call__(self, func):
+        """The ConfigSection object can be used as a function decorator.  
+        
+        By decorating a function with variable keyword arguments you're
+        function's signature will be changed to a fixed set keyword argument
+        with the default values defined in this ConfigSection object.  When
+        you're function is called, the values passed in will be set inside of
+        this ConfigSection object (which is also reflected when accessing
+        options through the Config), thus maintaining a simple to use global
+        configuration state.
+        
+        For example::
+            
+            myconfig = Config('my.conf')
+
+            @myconfig.mysection
+            def func(**k):
+                pass
+
+        Returns a wrapped function which is bound to this ConfigSection object.
+        """
+        return wraps_kwargs(self)(func)
 
 
 ConfigSection._reserved = set(dir(ConfigSection))
@@ -237,23 +289,27 @@ class Config(MutableMapping):
     _lookup = None
 
     def __init__(self, filenames=[]):
-        """Construct a new Config object.  See Config.read to see how
-        filenames are loaded and handled. 
+        """Construct a new Config object.  
+        
+        This is the root object for a function configuration set.  It is the
+        container for the configuration sections.
+
+        Options
+            filenames: Provide a list of filenames to read in configuration
+            and initialise this object with. 
         """
         self._sections = {}
         self._lookup = {}
-        if filenames:
-            self.read(filenames)
+        self.read(filenames)
 
     def read(self, filenames):
         """Read and parse a filename or a list of filenames.
 
-        Files that cannot be opened are silently ignored; this is
-        designed so that you can specify a list of potential
-        configuration file locations (e.g. current directory, user's
-        home directory, systemwide directory), and all existing
-        configuration files in the list will be read.  A single
-        filename may also be given.
+        Files that cannot be opened are silently ignored; this is designed so
+        that you can specify a list of potential configuration file locations
+        (e.g. current directory, user's home directory, system wide directory),
+        and all existing configuration files in the list will be read.  A
+        single filename may also be given.
 
         Return list of successfully read files.
         """
@@ -270,15 +326,28 @@ class Config(MutableMapping):
         return read_ok
 
     def load(self, stream):
-        """Parse the first YAML document from stream and load the relative
-        {section:{option:value}} into this Config object.
+        """Parse the first YAML document from stream than load the
+        section:option:value elements into this Config object.
         """
         for section, options in yaml.load(stream).items():
             for option, value in options.items():
                 self.set(section, option, value)
 
     def set(self, section, option, value):
-        "Set an option."
+        """Set an option.
+        
+        In the event of setting an option name or section name to a reserved
+        word a ValueError will be raised.  A complete set of reserved words for
+        both section and option can be seen by::
+
+            print(dir(funconf.Config))
+            print(dir(funconf.ConfigOption))
+
+        Arguments
+            section: Name of the section to add the option into.
+            option:  Name of the option.
+            value:   Value assigned to this option.
+        """
         if section in Config._reserved:
             raise ValueError("%s is a reserved Config word" % option)
         if option in ConfigSection._reserved:
@@ -288,6 +357,7 @@ class Config(MutableMapping):
         self[key] = value
 
     def __str__(self):
+        "Return a YAML formated string object that represents this object."
         conf = []
         for section_name, section in self._sections.items():
             conf.append("\n#\n# %s\n#" % (section_name.capitalize()))
@@ -295,33 +365,40 @@ class Config(MutableMapping):
         return "\n".join(conf)
 
     def __dir__(self):
+        "Return a list of section names and the Base class attributes."
         return dir(super(Config, self)) + self._sections.keys()
 
     def __getattribute__(self, y):
+        """Return a section where y is the 'section' name.  Else, return the
+        value of a reserved word."""
         if y in Config._reserved:
             return super(Config, self).__getattribute__(y)
         else:
             if y not in self._sections:
-                msg = "%s not defined in %s" % (y, self._section)
+                msg = "Config object has no section '%s'" % (y)
                 raise ConfigAttributeError(msg)
             return self._sections[y]
 
     def __setattr__(self, x, y):
+        "Only attributes that are a reserved work can be set in this object."
         if x in Config._reserved:
             super(Config, self).__setattr__(x, y)
         else:
             raise Exception("Can not set new attributes in Config %s" % x)
 
     def __delitem__(self, y):
-        raise NotImplementedError()
+        raise NotImplementedError("Configuration can only be updated or added")
 
     def __iter__(self):
+        "Iterate all of the 'section_option' keys."
         return self._lookup.__iter__()
 
     def __len__(self):
+        "Return the number of options defined in this Config object"
         return len(self._lookup)
 
     def __setitem__(self, x, y):
+        "Set the option value of y for x where x is 'section_option'."
         if x not in self._lookup:
             raise ValueError("There is no section for '%s'" % x)
         s, option = self._lookup[x]
@@ -331,15 +408,34 @@ class Config(MutableMapping):
         section[option] = y
 
     def __getitem__(self, y):
+        "Return the option value for y where y is 'section_option'."
         if y not in self._lookup:
             raise ValueError("There is no section for '%s'" % y)
         s, option = self._lookup[y]
         section = self._sections[s]
         return section[option]
 
-    @property
-    def wraps(self):
-        return wraps_kwargs(self) 
+    def __call__(self, func):
+        """The Config object can be used as a function decorator.  
+        
+        By decorating a function with variable keyword arguments you're
+        function's signature will be changed to a fixed set keyword argument
+        with the default values defined in this Config object.  When you're
+        function is called, the values passed in will be set inside of this
+        Config object, thus maintaining a simple to use global configuration
+        state.
+        
+        For example::
+            
+            myconfig = Config('my.conf')
+
+            @myconfig
+            def func(**k):
+                pass
+
+        Returns a wrapped function which is bound to this Config object.
+        """
+        return wraps_kwargs(self)(func) 
 
 
 Config._reserved = set(dir(Config))
