@@ -346,9 +346,8 @@ class Config(MutableMapping):
         This is the root object for a function configuration set.  It is the
         container for the configuration sections.
 
-        :param filenames: filenames to read in configuration and initialise
-                          this object with. 
-        :type filenames: list of file paths
+        :param filenames: YAML configuration files.
+        :type filenames: list of filepaths
         """
         self._sections = {}
         self._lookup = {}
@@ -363,9 +362,8 @@ class Config(MutableMapping):
         and all existing configuration files in the list will be read.  A
         single filename may also be given.
 
-        :param filenames: filenames to read in configuration and update this
-                          object with. 
-        :type filenames: list of file paths
+        :param filenames: YAML configuration files.
+        :type filenames: list of filepaths
         :rtype: list of successfully read files.
         """
         if isinstance(filenames, basestring):
