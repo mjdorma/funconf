@@ -9,6 +9,7 @@ Project support:
 
 * hosted at `github.com`_.
 * distributed through `PyPI`_.
+* documentation hosting at `readthedocs.org`_.
 
 [mjdorma+funconf@gmail.com]
 
@@ -34,4 +35,5 @@ Indices and tables
 
 .. _github.com: https://github.com/mjdorma/funconf
 .. _PyPI: https://pypi.python.org/pypi/funconf
+.. _readthedocs.org: https://funconf.readthedocs.org/en/latest/ 
 
