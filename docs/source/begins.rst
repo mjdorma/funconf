@@ -127,11 +127,9 @@ values.  This yields a subtle advantage of, as soon as your program entry has
 executed, you now have a simple to use global object which represents the
 programs configuration state. 
 
-See the documentation prologue of `funconf.py`_ for more details.
+Find out more in the :py:mod:`funconf` module documentation. 
 
 
-
-.. _funconf.py: https://github.com/mjdorma/funconf/blob/master/funconf.py
 .. _demo.py: https://github.com/mjdorma/funconf/blob/master/docs/source/demo.py
 .. _my.conf: https://github.com/mjdorma/funconf/blob/master/docs/source/my.conf
 .. _begins: https://github.com/aliles/begins

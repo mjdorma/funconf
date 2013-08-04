@@ -120,8 +120,8 @@ import yaml
 def wraps_kwargs(fixed_kwargs):
     """Decorate a function to expose a fixed set of defined *key:value* pairs. 
         
-    The following example will define a and b for the variable length kwargs 
-    input to the function myfunc::
+    The following example will redifine myfunc to have default fixed kwargs of
+    a=4 and b=2:: 
 
         mydict = {a=4, b=2}
         @wraps_kwargs(mydict)
@@ -150,7 +150,7 @@ def wraps_kwargs(fixed_kwargs):
     used to update the *fixed_kwargs* object. The *fixed_kwargs* object is
     then passed into the wrapped function i.e. ``wrapped(**fixed_kwargs)``. 
     
-    :param fixed_kwargs: keyword arguments to be fix into the wrapped function.
+    :param fixed_kwargs: kwargs to be fix into the wrapped function.
     :type fixed_kwargs: mutable mapping
     :rtype: decorated function.
     """
@@ -201,7 +201,7 @@ class ConfigSection(MutableMapping):
       of the *MutableMapping* abstract type.
     * when cast to a string it outputs its state in YAML.
     * as a decorator it utilises the :py:func:`wraps_kwargs` to change
-      the defaults of a variable keyword argument function.  
+      the defaults of a variable kwargs function.  
     """
 
     _dirty = None 
@@ -294,13 +294,13 @@ class ConfigSection(MutableMapping):
         """The :py:class:`ConfigSection` object can be used as a function
         decorator.  
         
-        By decorating a function with variable keyword arguments you're
-        function's signature will be changed to a fixed set keyword argument
-        with the default values defined in this :py:class:`ConfigSection`
-        object.  When you're function is called, the values passed in will be
-        set inside of this :py:class:`ConfigSection` object (which is also
-        reflected when accessing options through the :py:class:`Config`), thus
-        maintaining a simple to use global configuration state.
+        By decorating a function with variable kwargs you're function's
+        signature will be changed to a fixed set kwargs with the default
+        values defined in this :py:class:`ConfigSection` object.  When you're
+        function is called, the values passed in will be set inside of this
+        :py:class:`ConfigSection` object (which is also reflected when
+        accessing options through the :py:class:`Config`), thus maintaining a
+        simple to use global configuration state.
         
         For example::
             
@@ -311,7 +311,7 @@ class ConfigSection(MutableMapping):
                 pass
 
         :param func: function to be wrapped.
-        :type func: variable keyword argument function 
+        :type func: variable kwargs function 
         :rtype: wrapped function with fixed kwargs bound to this 
                 :py:class:`ConfigSection` object.
         """
@@ -333,7 +333,7 @@ class Config(MutableMapping):
       through a standard implementation of the *MutableMapping* abstract type.
     * when cast to a string it outputs its state in YAML.
     * as a decorator it utilises the :py:func:`wraps_kwargs` to change
-      the defaults of a variable keyword argument function.  
+      the defaults of a variable kwargs function.  
     """
 
     _sections = None
@@ -475,12 +475,12 @@ class Config(MutableMapping):
     def __call__(self, func):
         """The :py:class:`Config` object can be used as a function decorator.  
         
-        By decorating a function with variable keyword arguments you're
-        function's signature will be changed to a fixed set keyword argument
-        with the default values defined in this :py:class:`Config` object.
-        When you're function is called, the values passed in will be set inside
-        of this :py:class:`Config` object, thus maintaining a simple to use
-        global configuration state.
+        By decorating a function with variable kwargs you're function's
+        signature will be changed to a fixed set kwargs with the default values
+        defined in this :py:class:`Config` object.  When you're function is
+        called, the values passed in will be set inside of this
+        :py:class:`Config` object, thus maintaining a simple to use global
+        configuration state.
         
         For example::
             
@@ -491,7 +491,7 @@ class Config(MutableMapping):
                 pass
 
         :param func: function to be wrapped.
-        :type func: variable keyword argument function 
+        :type func: variable kwargs function 
         :rtype: wrapped function with fixed kwargs bound to this
                 :py:class:`Config` object.
         """
