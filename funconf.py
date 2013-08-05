@@ -120,30 +120,13 @@ import yaml
 def wraps_kwargs(fixed_kwargs):
     """Decorate a function to expose a fixed set of defined *key:value* pairs. 
         
-    The following example will redifine myfunc to have default fixed kwargs of
+    The following example will redefine myfunc to have default fixed kwargs of
     a=4 and b=2:: 
 
         mydict = {a=4, b=2}
         @wraps_kwargs(mydict)
         def myfunc(**k):
             pass
-
-    There is an attempt to implicitly type cast input values if they differ
-    from the type of the default value found in *fixed_kwargs* and if the type
-    of the input value is an instance of *basestring*.  The following list
-    details how each type is handled:
-
-        int, bool, float:
-            If the input value string can not be cast into an int, bool, or
-            float, the exception generated during the attempted conversion
-            will be raised.
-
-        list:
-            The input value string will be split into a list shlex.split.  
-            
-        other:
-            An attempt to convert other types will be made.  If this fails, the
-            input value will be passed through in its original string form.
 
     The *fixed_kwargs* object needs to satisfy the *MutableMapping* interface
     definition. When the wrapped function is called the kwargs passed in are
@@ -156,26 +139,7 @@ def wraps_kwargs(fixed_kwargs):
     """
     def decorator(func):
         def wrapper(**kwargs):
-            for k, v in fixed_kwargs.items():
-                vtype = type(v)
-                value = kwargs.get(k, v)
-                if not isinstance(value, vtype) and \
-                            isinstance(value, basestring):
-                    if vtype is list:
-                        value = shlex.split(value)
-                    elif vtype in [int, bool, float]:
-                        try:
-                            value = vtype(value)
-                        except:
-                            msg = "Can not convert %s='%s' to %s" % (k, value,
-                                    vtype)
-                            raise ValueError(msg)
-                    else:
-                        try:
-                            value = vtype(value)
-                        except:
-                            pass
-                fixed_kwargs[k] = value 
+            fixed_kwargs.update(kwargs)
             return func(**fixed_kwargs)
         functools.update_wrapper(wrapper, func)
         parameters = []
@@ -184,6 +148,94 @@ def wraps_kwargs(fixed_kwargs):
             parameters.append(param)
         sig = Signature(parameters=parameters)
         wrapper.__signature__ = sig
+        return wrapper
+    return decorator
+
+
+def lazy_string_cast(model_kwargs):
+    """Implicitly type cast string input values if they differ from the type of
+    the default value found in *model_kwargs*.
+    
+    The following list details how each type is handled:
+
+        int, bool, float:
+            If the input value string can not be cast into an int, bool, or
+            float, the exception generated during the attempted conversion
+            will be raised.
+
+        list:
+            The input value string will be split into a list shlex.split.  If
+            the default list value in model contains items, the first item is
+            sampled an attempt to cast the entire list is made for that type. 
+            
+        other:
+            An attempt to convert other types will be made.  If this fails, the
+            input value will be passed through in its original string form.
+    
+    The following example demonstrates how lazy_string_cast can be applied::
+        
+        default = dict(a=4, b=[4, 2, 55])
+
+        @lazy_string_cast(default)
+        def main(a=4, b=[4, 2, 55]):
+            pass
+
+    Or using :py:func:`lazy_string_cast` with :py:func:`wraps_kwargs`::
+
+        default = dict(a=4, b=[4, 2, 55])
+
+        @lazy_string_cast(default)
+        @wraps_kwargs(default)
+        def main(**k):
+            pass
+
+
+    """
+    def cast_type_raise(vtype, key, value):
+        try:
+            value = vtype(value)
+        except:
+            msg = "Can not convert %s='%s' to %s" % (k, value,
+                    vtype)
+            raise ValueError(msg)
+        return value
+
+    def cast_type(vtype, key, value):
+        try:
+            value = vtype(value)
+        except:
+            pass
+        return value
+
+    def cast_list(inner_type, key, value):
+        value = shlex.split(value)
+        if inner_type is not None:
+            value = [cast_type(inner_type, key, a) for a in value]
+        return value
+
+    def cast_factory(func, key, cast_type):
+        return lambda value: func(cast_type, key, value)
+
+    cast_ctrl = {}
+    for k, v in model_kwargs.items():
+        vtype = type(v)
+        if vtype is list:
+            inner_type = None if not v else type(v[0])
+            cast_ctrl[k] = (list, cast_factory(cast_list, k, inner_type))
+        elif vtype in [int, bool, float]:
+            cast_ctrl[k] = (vtype, cast_factory(cast_type_raise, k, vtype))
+        else:
+            cast_ctrl[k] = (vtype, cast_factory(cast_type, k, vtype))
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(**kwargs):
+            for k, v in kwargs.items():
+                vtype, cast_func = cast_ctrl[k]
+                if not isinstance(v, vtype) and isinstance(v, basestring): 
+                    v = cast_func(v)
+                kwargs[k] = v
+            return func(**kwargs)
         return wrapper
     return decorator
 
@@ -315,7 +367,7 @@ class ConfigSection(MutableMapping):
         :rtype: wrapped function with fixed kwargs bound to this 
                 :py:class:`ConfigSection` object.
         """
-        return wraps_kwargs(self)(func)
+        return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
 
 
 ConfigSection._reserved = set(dir(ConfigSection))
@@ -385,7 +437,12 @@ class Config(MutableMapping):
         :param stream: the configuration to be loaded using ``yaml.load``.
         :type stream: stream object
         """
-        for section, options in yaml.load(stream).items():
+        config = yaml.load(stream)
+        if not isinstance(config, dict):
+            return
+        for section, options in config.items():
+            if not isinstance(options, dict):
+                continue
             for option, value in options.items():
                 self.set(section, option, value)
 
@@ -495,7 +552,7 @@ class Config(MutableMapping):
         :rtype: wrapped function with fixed kwargs bound to this
                 :py:class:`Config` object.
         """
-        return wraps_kwargs(self)(func) 
+        return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
 
 
 Config._reserved = set(dir(Config))
