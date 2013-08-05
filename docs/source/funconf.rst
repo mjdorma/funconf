@@ -13,6 +13,7 @@ Code reference guide
 
 .. autofunction:: funconf.wraps_kwargs
 
+.. autofunction:: funconf.lazy_string_cast
 
 .. autoclass:: funconf.Config
     :members:

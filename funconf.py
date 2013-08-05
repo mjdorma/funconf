@@ -153,8 +153,8 @@ def wraps_kwargs(fixed_kwargs):
 
 
 def lazy_string_cast(model_kwargs):
-    """Implicitly type cast string input values if they differ from the type of
-    the default value found in *model_kwargs*.
+    """Type cast string input values if they differ from the type of the
+    default value found in *model_kwargs*.
     
     The following list details how each type is handled:
 
@@ -172,7 +172,7 @@ def lazy_string_cast(model_kwargs):
             An attempt to convert other types will be made.  If this fails, the
             input value will be passed through in its original string form.
     
-    The following example demonstrates how lazy_string_cast can be applied::
+    This example demonstrates how :py:func:`lazy_string_cast` can be applied::
         
         default = dict(a=4, b=[4, 2, 55])
 
@@ -189,7 +189,9 @@ def lazy_string_cast(model_kwargs):
         def main(**k):
             pass
 
-
+    :param model_kwargs: kwargs to model default type values and keys from.
+    :type model_kwargs: mutable mapping
+    :rtype: decorated function.
     """
     def cast_type_raise(vtype, key, value):
         try:
@@ -345,15 +347,14 @@ class ConfigSection(MutableMapping):
     def __call__(self, func):
         """The :py:class:`ConfigSection` object can be used as a function
         decorator.  
-        
-        By decorating a function with variable kwargs you're function's
-        signature will be changed to a fixed set kwargs with the default
-        values defined in this :py:class:`ConfigSection` object.  When you're
-        function is called, the values passed in will be set inside of this
-        :py:class:`ConfigSection` object (which is also reflected when
-        accessing options through the :py:class:`Config`), thus maintaining a
-        simple to use global configuration state.
-        
+
+        Applying this decorator to a function which takes variable kwargs will
+        change its signature to a fixed set of kwargs with default values
+        defined by the values in this :py:class:`ConfigSection` object. The
+        input kwargs go through the :py:func:`lazy_string_cast` function and
+        are passed into this objects update routine.  The wrapped function is
+        finally called with the updated values of this object. 
+
         For example::
             
             myconfig = Config('my.conf')
@@ -532,13 +533,13 @@ class Config(MutableMapping):
     def __call__(self, func):
         """The :py:class:`Config` object can be used as a function decorator.  
         
-        By decorating a function with variable kwargs you're function's
-        signature will be changed to a fixed set kwargs with the default values
-        defined in this :py:class:`Config` object.  When you're function is
-        called, the values passed in will be set inside of this
-        :py:class:`Config` object, thus maintaining a simple to use global
-        configuration state.
-        
+        Applying this decorator to a function which takes variable kwargs will
+        change its signature to a fixed set of kwargs with default values
+        defined by the values in this :py:class:`Config` object. The input
+        kwargs go through the :py:func:`lazy_string_cast` function and are
+        passed into this objects update routine.  The wrapped function is
+        finally called with the updated values of this object. 
+
         For example::
             
             myconfig = Config('my.conf')
