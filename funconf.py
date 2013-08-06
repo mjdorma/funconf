@@ -54,7 +54,7 @@ example::
     config.set('foo', 'bar', 4)
     config.set('foo', 'bar', ['how', 'are', 'you'])
     config.set('bread', 'butter', 'milk')
-    config.set('bread', 'milk', 'fail)
+    config.set('bread', 'milk', 'fail')
     print(config)
 
 
