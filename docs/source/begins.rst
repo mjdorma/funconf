@@ -31,7 +31,7 @@ Taking this example YAML configuration file `my.conf`_::
       milk: fail
 
 
-And applying it to this simple program `demo.py`_::
+Applying it to this simple program `demo.py`_::
    
     import begin
     import funconf
@@ -123,9 +123,9 @@ Conclusion
 
 The default values read into the :py:class:`funconf.Config` object from
 my.conf will be overridden by `begins`_ when it passes in user defined option
-values.  This yields a subtle advantage of, as soon as your program entry has
-executed, you now have a simple to use global object which represents the
-programs configuration state. 
+values from the command line.  As soon as your program entry has executed, you
+will now have a simple up to date global object which represents the programs
+configuration state. 
 
 Find out more in the :py:mod:`funconf` module documentation. 
 
