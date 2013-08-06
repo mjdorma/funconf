@@ -59,7 +59,7 @@ class TestConfig(unittest.TestCase):
     def test_print_config(self, mock_open):
         mock_open.return_value = StringIO(TEST_CONFIG)
         config = funconf.Config('mocked.conf')
-        self.assertEqual(str(config).strip(), TEST_CONFIG)
+        self.assertEqual(u(str(config).strip()), TEST_CONFIG)
         self.assertEqual(len(config), 8)
         self.assertEqual(len(config.bbb), 4)
 
