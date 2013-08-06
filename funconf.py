@@ -323,7 +323,10 @@ class ConfigSection(MutableMapping):
         if x in ConfigSection._reserved:
             super(ConfigSection, self).__setattr__(x, y)
         else:
-            self[x] = y
+            if x in self:
+                self[x] = y
+            else:
+                raise Exception("Can not set new attributes in ConfigSection")
 
     def __delitem__(self, y):
         raise NotImplementedError("Configuration can only be updated or added")
@@ -518,7 +521,7 @@ class Config(MutableMapping):
         if x in Config._reserved:
             super(Config, self).__setattr__(x, y)
         else:
-            raise Exception("Can not set new attributes in Config %s" % x)
+            raise Exception("Options can not be set through this interface")
 
     def __delitem__(self, y):
         raise NotImplementedError("Configuration can only be updated or added")
