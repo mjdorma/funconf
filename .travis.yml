@@ -1,0 +1,15 @@
+language: python
+python:
+  - 2.6
+  - 2.7
+  - pypy
+install:
+  - pip install -r requirements.txt
+  - python setup.py install
+script:
+  - coverage run setup.py test
+  - coverage report --show-missing
+after_success:
+  - coveralls
+notifications:
+    email: mjdorma+travis-ci@gmail.com
