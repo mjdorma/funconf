@@ -4,6 +4,10 @@ import re
 import sys
 
 
+PYTHON3K = sys.version_info[0] > 2
+requires = ["pyyaml"] + ['funcsigs'] if sys.version_info[:2] < (3, 3) else []
+
+
 setup(
     name="funconf",
     version='0.0.0',
@@ -30,6 +34,8 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
-    install_requires=['pyyaml', 'funcsigs'],
+    tests_require=[] if PYTHON3K else ['unittest2'],
+    test_suite="tests" if PYTHON3K else "unittest2.collector", 
+    install_requires=requires,
 )
 
