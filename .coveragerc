@@ -2,4 +2,4 @@
 source=funconf
 
 [report]
-include=begin*
+include=funconf*

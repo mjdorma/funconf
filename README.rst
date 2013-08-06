@@ -12,9 +12,9 @@ Project support:
 * distributed through `PyPI`_.
 * documentation hosting at `readthedocs.org`_.
 
-[mjdorma+funconf@gmail.com]
-
 |pypi_version| |build_status| |coverage|
+
+[mjdorma+funconf@gmail.com]
 
 
 Install
