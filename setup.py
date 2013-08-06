@@ -34,7 +34,7 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
-    tests_require=[] if PYTHON3K else ['unittest2'],
+    tests_require=["mock"] + [] if PYTHON3K else ['unittest2'],
     test_suite="tests" if PYTHON3K else "unittest2.collector", 
     install_requires=requires,
 )
