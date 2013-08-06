@@ -116,11 +116,31 @@ class TestConfig(unittest.TestCase):
         self.assertRaises(NotImplementedError, config.__delitem__, 'foo')
         self.assertRaises(NotImplementedError, config.foo.__delitem__, 'bar')
 
+    def test_reserved_words(self):
+        config = funconf.Config()
+        self.assertRaises(ValueError, config.set, 'set', 'foo', True)
+        config.set('foo', 'bar', False)
+        self.assertRaises(ValueError, config.set, 'set', 'items', True)
+ 
     def test_dirty(self):
         config = funconf.Config()
         config.set('foo', 'bar', False)
         self.assertTrue(config.foo.dirty)
         self.assertFalse(config.foo.dirty)
+
+    def test_config_setitem_getitem(self):
+        config = funconf.Config()
+        config.set('foo', 'bar', False)
+        self.assertFalse(config['foo_bar'])
+        self.assertFalse(config.foo['bar'])
+        self.assertRaises(ValueError, config.__setitem__, 'blah', 4)
+        self.assertRaises(ValueError, config.__getitem__, 'blah')
+
+    def test_dir(self):
+        config = funconf.Config()
+        config.set('foo', 'bar', False)
+        self.assertTrue('foo' in dir(config))
+        self.assertTrue('bar' in dir(config.foo))
 
     def test_config_decorate(self):
         config = funconf.Config()
