@@ -29,17 +29,12 @@ or `PyPi`_::
     > pip install funconf 
 
 
-Compatibility
-=============
-
-TBA
-
-
 Change log
 ==========
 
 
-* not yet released
+* 0.1 - test, doc, coverage, PyPy and 2x support 
+
 
 .. _github.com: https://github.com/mjdorma/funconf
 .. _PyPi: http://pypi.python.org/pypi/funconf
