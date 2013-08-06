@@ -14,6 +14,8 @@ Project support:
 
 [mjdorma+funconf@gmail.com]
 
+|pypi_version| |build_status| |coverage|
+
 
 Install
 =======
@@ -43,3 +45,14 @@ Change log
 .. _PyPi: http://pypi.python.org/pypi/funconf
 .. _readthedocs.org: https://funconf.readthedocs.org/en/latest/ 
 
+.. |build_status| image:: https://secure.travis-ci.org/mjdorma/funconf.png?branch=master
+   :target: https://travis-ci.org/mjdorma/funconf
+   :alt: Current build status
+
+.. |coverage| image:: https://coveralls.io/repos/mjdorma/funconf/badge.png?branch=master
+   :target: https://coveralls.io/r/mjdorma/funconf?branch=master
+   :alt: Latest PyPI version
+
+.. |pypi_version| image:: https://pypip.in/v/funconf/badge.png
+   :target: https://crate.io/packages/funconf/
+   :alt: Latest PyPI version
