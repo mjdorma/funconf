@@ -61,6 +61,7 @@ class TestConfig(unittest.TestCase):
         config = funconf.Config('mocked.conf')
         self.assertEqual(str(config).strip(), TEST_CONFIG)
         self.assertEqual(len(config), 8)
+        self.assertEqual(len(config.bbb), 4)
 
     @patch('__builtin__.open') 
     def test_accessing_attributes(self, mock_open):
@@ -120,3 +121,20 @@ class TestConfig(unittest.TestCase):
         config.set('foo', 'bar', False)
         self.assertTrue(config.foo.dirty)
         self.assertFalse(config.foo.dirty)
+
+    def test_config_decorate(self):
+        config = funconf.Config()
+        config.set('foo', 'bar', False)
+        @config
+        def func(**k):
+            self.assertFalse(k['foo_bar'])
+        func()
+
+    def test_config_section_decorate(self):
+        config = funconf.Config()
+        config.set('foo', 'bar', False)
+        @config.foo
+        def func(**k):
+            self.assertFalse(k['bar'])
+        func()
+
