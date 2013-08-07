@@ -5,7 +5,7 @@ This module simplifies the management of function default keyword argument
 values.
 
 :py:mod:`funconf` introduces two decorators. The first function
-:py:func:`wraps_var_kwargs` makes it trivial to dynamically define the default
+:py:func:`wraps_kwargs` makes it trivial to dynamically define the default
 kwargs for a function.  The second function :py:func:`lazy_string_cast` casts
 input parameters passed in based on the default values of the kwargs and the
 default values of arguments found in the function it is wrapping. 
@@ -63,7 +63,7 @@ A configuration object
 
 The :py:class:`Config` class is the root class container for all of the
 configuration sections.  It implements the *MutableMapping* type which allows
-it to seamlessly integrate into the :py:func:`wraps_var_kwargs` function. 
+it to seamlessly integrate into the :py:func:`wraps_kwargs` function. 
 
 As a dictionary ``dict(config)`` the :py:class:`Config` object looks like::
 
@@ -93,7 +93,7 @@ To access sections and option values the following pattern holds true::
 
 A section is represented by the :py:class:`ConfigSection` object. This object
 implements the *MutableMapping* type in the same way the :py:class:`Config`
-object is implemented and is compatible with the :py:func:`wraps_var_kwargs`
+object is implemented and is compatible with the :py:func:`wraps_kwargs`
 function.  The :py:class:`ConfigSection` represented ``str(config.bread)``
 looks like::
 
@@ -124,7 +124,7 @@ except NameError:
 from io import StringIO
 import yaml
 
-def wraps_var_kwargs(kwarg_defaults):
+def wraps_kwargs(kwarg_defaults):
     """Decorate a function to define and extend its default keyword argument
     values.
         
@@ -132,7 +132,7 @@ def wraps_var_kwargs(kwarg_defaults):
     and b=2:: 
 
         mydict = {a=4, b=2}
-        @wraps_var_kwargs(mydict)
+        @wraps_kwargs(mydict)
         def myfunc(**k):
             pass
 
@@ -147,12 +147,17 @@ def wraps_var_kwargs(kwarg_defaults):
     """
     def decorator(func):
         kwarg_defaults_set = set(kwarg_defaults)
+        func_defaults_set = set()
+        has_var_keyword = False
         def wrapper(**kwargs):
             kwargs_set = set(kwargs)
             for k in kwargs_set.intersection(kwarg_defaults_set):
                 kwarg_defaults[k] = kwargs[k]
-            for k in kwarg_defaults_set.difference(kwargs_set):
-                kwargs[k] = kwarg_defaults[k]
+            for k in kwarg_defaults_set.difference(func_defaults_set):
+                if has_var_keyword:
+                    kwargs[k] = kwarg_defaults[k]
+                else:
+                    kwargs.pop(k)
             return func(**kwargs)
         funcsig = signature(func)
         parameters = []
@@ -160,10 +165,13 @@ def wraps_var_kwargs(kwarg_defaults):
             if arg in kwarg_defaults:
                 continue
             elif param.default != param.empty:
+                func_defaults_set.add(arg)
                 param = Parameter(arg, Parameter.KEYWORD_ONLY,
                                        default=param.default)
                 parameters.append(param)
-            elif param.kind != param.VAR_KEYWORD:
+            elif param.kind == param.VAR_KEYWORD:
+                has_var_keyword = True
+            else:
                 msg = "%s parameters are not supported" % param.kind 
                 raise ValueError(msg)
         functools.update_wrapper(wrapper, func)
@@ -176,7 +184,7 @@ def wraps_var_kwargs(kwarg_defaults):
     return decorator
 
 
-def lazy_string_cast(model_kwargs):
+def lazy_string_cast(model_kwargs={}):
     """Type cast string input values if they differ from the type of the
     default value found in *model_kwargs*.
     
@@ -198,19 +206,19 @@ def lazy_string_cast(model_kwargs):
     
     This example demonstrates how :py:func:`lazy_string_cast` can be applied::
         
-        default = dict(a=4, b=[4, 2, 55])
-
-        @lazy_string_cast(default)
+        @lazy_string_cast()
         def main(a=4, b=[4, 2, 55]):
             pass
 
-    Or using :py:func:`lazy_string_cast` with :py:func:`wraps_var_kwargs`::
 
-        default = dict(a=4, b=[4, 2, 55])
+    Or using :py:func:`lazy_string_cast` with :py:func:`wraps_kwargs` to
+    define new keyword defaults::
 
-        @lazy_string_cast(default)
-        @wraps_var_kwargs(default)
-        def main(**k):
+        config = dict(a=6, b=[4])
+
+        @lazy_string_cast(config)
+        @wraps_kwargs()
+        def main(a=4, b=[4, 2, 55]):
             pass
 
     :param model_kwargs: kwargs to model default type values and keys from.
@@ -271,6 +279,7 @@ def lazy_string_cast(model_kwargs):
                         kwargs[k] = cast_func(v)
             return func(**kwargs)
         return wrapper
+
     return decorator
 
 
@@ -286,7 +295,7 @@ class ConfigSection(MutableMapping):
     * exposes a configuration *option:value* through a standard implementation
       of the *MutableMapping* abstract type.
     * when cast to a string it outputs its state in YAML.
-    * as a decorator it utilises the :py:func:`wraps_var_kwargs` to change
+    * as a decorator it utilises the :py:func:`wraps_kwargs` to change
       the defaults of a variable kwargs function.  
     """
  
@@ -400,7 +409,7 @@ class ConfigSection(MutableMapping):
         :rtype: wrapped function with defined kwargs defaults bound to this 
                 :py:class:`ConfigSection` object.
         """
-        return lazy_string_cast(self)(wraps_var_kwargs(self)(func)) 
+        return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
 
 
 ConfigSection._reserved = set(dir(ConfigSection))
@@ -417,7 +426,7 @@ class Config(MutableMapping):
     * exposes a translation of the configuration into section_option:value
       through a standard implementation of the *MutableMapping* abstract type.
     * when cast to a string it outputs its state in YAML.
-    * as a decorator it utilises the :py:func:`wraps_var_kwargs` to change
+    * as a decorator it utilises the :py:func:`wraps_kwargs` to change
       the defaults of a variable kwargs function.  
     """
 
@@ -586,7 +595,7 @@ class Config(MutableMapping):
         :rtype: wrapped function with defined kwargs bound to this
                 :py:class:`Config` object.
         """
-        return lazy_string_cast(self)(wraps_var_kwargs(self)(func)) 
+        return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
 
 
 Config._reserved = set(dir(Config))

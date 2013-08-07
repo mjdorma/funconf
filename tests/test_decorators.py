@@ -18,7 +18,7 @@ class TestWrapsKwargs(unittest.TestCase):
 
     def test_wrapped(self):
         kwargs = dict(a=1, b=2)
-        @funconf.wraps_var_kwargs(kwargs)
+        @funconf.wraps_kwargs(kwargs)
         def main(**k):
             return k
         self.assertTrue(kwargs == main())
@@ -27,19 +27,27 @@ class TestWrapsKwargs(unittest.TestCase):
         self.assertTrue(kwargs is not main())
 
     def test_wrapped_no_params(self):
-        @funconf.wraps_var_kwargs({})
+        @funconf.wraps_kwargs({})
         def main(**k):
             return k
         self.assertTrue({} == main())
+
+    def test_with_no_var_keywords(self):
+        conf = dict(b=4)
+        @funconf.wraps_kwargs(conf)
+        def main(a=4):
+            return a
+        self.assertTrue(main(b=5) == 4)
+        self.assertTrue(dict(b=5) == conf)
 
     def test_non_var_keyword(self):
         def var_arg(*a):
             pass
         def fixed_arg(a, b):
             pass
-        def fixed_kwargs(k=3,b=4):
+        def fixed_kwargs(k=3, b=4):
             pass
-        decorator = funconf.wraps_var_kwargs({})
+        decorator = funconf.wraps_kwargs({})
         self.assertRaises(ValueError,  decorator, var_arg)
         self.assertRaises(ValueError,  decorator, fixed_arg)
 
