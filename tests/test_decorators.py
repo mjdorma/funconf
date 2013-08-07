@@ -23,7 +23,7 @@ class TestWrapsKwargs(unittest.TestCase):
             return k
         self.assertTrue(kwargs == main())
         self.assertTrue(kwargs == main(a=5))
-        self.assertRaises(TypeError, main, c=5)
+        self.assertTrue(kwargs != main(c=5))
         self.assertTrue(kwargs is not main())
 
     def test_wrapped_no_params(self):
@@ -42,7 +42,6 @@ class TestWrapsKwargs(unittest.TestCase):
         decorator = funconf.wraps_var_kwargs({})
         self.assertRaises(ValueError,  decorator, var_arg)
         self.assertRaises(ValueError,  decorator, fixed_arg)
-        self.assertRaises(ValueError,  decorator, fixed_kwargs)
 
 
 class TestLazyStringCast(unittest.TestCase):

@@ -5,10 +5,10 @@ This module simplifies the management of function default keyword argument
 values.
 
 :py:mod:`funconf` introduces two decorators. The first function
-:py:func:`wraps_var_kwargs` makes it possible to dynamically define the
-default kwargs for a function that takes a variable number of kwargs.  The
-second function :py:func:`lazy_string_cast` casts input parameters passed in
-based on the default values of the kwargs it was constructed with. 
+:py:func:`wraps_var_kwargs` makes it trivial to dynamically define the default
+kwargs for a function.  The second function :py:func:`lazy_string_cast` casts
+input parameters passed in based on the default values of the kwargs and the
+default values of arguments found in the function it is wrapping. 
 
 For configuration, :py:mod:`funconf` borrows from concepts discussed in
 Python's core library *ConfigParser*.  A configuration consists of sections
@@ -117,12 +117,16 @@ try:
     from inspect import signature, Signature, Parameter
 except ImportError:
     from funcsigs import signature, Signature, Parameter 
+try:
+    u = unicode
+except NameError:
+    u = lambda x: x
+from io import StringIO
 import yaml
 
-
 def wraps_var_kwargs(kwarg_defaults):
-    """Decorate a function to define set of *key:value* pairs and hide the
-    variable keyword argument parameter. 
+    """Decorate a function to define and extend its default keyword argument
+    values.
         
     The following example will redefine myfunc to have default kwargs of a=4
     and b=2:: 
@@ -144,20 +148,25 @@ def wraps_var_kwargs(kwarg_defaults):
     def decorator(func):
         kwarg_defaults_set = set(kwarg_defaults)
         def wrapper(**kwargs):
-            diff = set(kwargs) - kwarg_defaults_set 
-            if diff:
-                msg = "%s() got an unexpected keyword argument '%s'" % \
-                        (func.func_name, "', '".join(diff)) 
-                raise TypeError(msg)
-            kwarg_defaults.update(kwargs)
-            return func(**kwarg_defaults)
+            kwargs_set = set(kwargs)
+            for k in kwargs_set.intersection(kwarg_defaults_set):
+                kwarg_defaults[k] = kwargs[k]
+            for k in kwarg_defaults_set.difference(kwargs_set):
+                kwargs[k] = kwarg_defaults[k]
+            return func(**kwargs)
         funcsig = signature(func)
-        for param in funcsig.parameters.values():
-            if param.kind != param.VAR_KEYWORD:
-                msg = "Can only wrap variable length keyword arguments"
+        parameters = []
+        for arg, param in funcsig.parameters.items():
+            if arg in kwarg_defaults:
+                continue
+            elif param.default != param.empty:
+                param = Parameter(arg, Parameter.KEYWORD_ONLY,
+                                       default=param.default)
+                parameters.append(param)
+            elif param.kind != param.VAR_KEYWORD:
+                msg = "%s parameters are not supported" % param.kind 
                 raise ValueError(msg)
         functools.update_wrapper(wrapper, func)
-        parameters = []
         for k, v in kwarg_defaults.items():
             param = Parameter(k, Parameter.KEYWORD_ONLY, default=v)
             parameters.append(param)
@@ -212,7 +221,7 @@ def lazy_string_cast(model_kwargs):
         try:
             value = vtype(value)
         except:
-            msg = "Can not convert %s='%s' to %s" % (k, value,
+            msg = "Can not convert %s='%s' to %s" % (key, value,
                     vtype)
             raise ValueError(msg)
         return value
@@ -238,17 +247,22 @@ def lazy_string_cast(model_kwargs):
             inner_cast_func = None if not v else cast_factory(k, v[0])
             return make_cast_func(cast_list, k, inner_cast_func)
         elif vtype is bool:
-            return make_cast_func(cast_type_raise, k, strtobool)
+            return make_cast_func(cast_type_raise, k, 
+                                  lambda x: bool(strtobool(x)))
         elif vtype in [int, float]:
             return make_cast_func(cast_type_raise, k, vtype)
         else:
             return make_cast_func(cast_type, k, vtype)
 
-    cast_ctrl = {}
-    for k, v in model_kwargs.items():
-        cast_ctrl[k] = (type(v), cast_factory(k, v))
-
     def decorator(func):
+        cast_ctrl = {}
+        for k, v in model_kwargs.items():
+            cast_ctrl[k] = (type(v), cast_factory(k, v))
+        funcsig = signature(func)
+        for k, param in funcsig.parameters.items():
+            if param.default != param.empty:
+                cast_ctrl[k] = (type(v), cast_factory(k, param.default))
+
         @functools.wraps(func)
         def wrapper(**kwargs):
             for k, v in kwargs.items():
@@ -276,11 +290,8 @@ class ConfigSection(MutableMapping):
     * as a decorator it utilises the :py:func:`wraps_var_kwargs` to change
       the defaults of a variable kwargs function.  
     """
-
-    _dirty = None 
-    _options = None
-    _section = None
-    _reserved = None
+ 
+    __slots__ = ('_dirty', '_options', '_section', '_reserved')
 
     def __init__(self, section, options):
         """Construct a new :py:class:`ConfigSection` object.  
@@ -319,7 +330,7 @@ class ConfigSection(MutableMapping):
             return self._options[y]
 
     def __setattr__(self, x, y):
-        "Only attributes that are a reserved work can be set in this object."
+        "Only attributes that are a reserved words can be set in this object."
         if x in ConfigSection._reserved:
             super(ConfigSection, self).__setattr__(x, y)
         else:
@@ -411,9 +422,7 @@ class Config(MutableMapping):
       the defaults of a variable kwargs function.  
     """
 
-    _sections = None
-    _reserved = None
-    _lookup = None
+    __slots__ = ('_sections', '_reserved', '_lookup')
 
     def __init__(self, filenames=[]):
         """Construct a new Config object.  
@@ -460,6 +469,8 @@ class Config(MutableMapping):
         :param stream: the configuration to be loaded using ``yaml.load``.
         :type stream: stream object
         """
+        if isinstance(stream, basestring):
+            stream = StringIO(u(stream))
         config = yaml.load(stream)
         if not isinstance(config, dict):
             return
@@ -517,7 +528,7 @@ class Config(MutableMapping):
             return self._sections[y]
 
     def __setattr__(self, x, y):
-        "Only attributes that are a reserved work can be set in this object."
+        "Only attributes that are a reserved words can be set in this object."
         if x in Config._reserved:
             super(Config, self).__setattr__(x, y)
         else:
@@ -531,7 +542,8 @@ class Config(MutableMapping):
         return self._lookup.__iter__()
 
     def __len__(self):
-        "Return the number of options defined in this :py:class:`Config` object"
+        """Return the number of options defined in this :py:class:`Config`
+        object"""
         return len(self._lookup)
 
     def __setitem__(self, x, y):
@@ -547,7 +559,7 @@ class Config(MutableMapping):
     def __getitem__(self, y):
         "Return the option value for y where y is *section_option*."
         if y not in self._lookup:
-            raise ValueError("There is no section for '%s'" % y)
+            raise KeyError("There is no section for '%s'" % y)
         s, option = self._lookup[y]
         section = self._sections[s]
         return section[option]

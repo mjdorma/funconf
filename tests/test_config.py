@@ -8,13 +8,10 @@ try:
 except ImportError:
     from funcsigs import signature
 import sys
-if sys.version < '3':
-    import codecs
-    def u(x):
-        return codecs.unicode_escape_decode(x)[0]
-else:
-    def u(x):
-        return x
+try:
+    u = unicode
+except NameError:
+    u = lambda x: x
 from io import StringIO
 from mock import patch
 import yaml
@@ -93,6 +90,10 @@ class TestConfig(unittest.TestCase):
     def test_file_doesnt_exist(self):
         funconf.Config(['blaoo.con'])
 
+    def test_load_string(self):
+        config = funconf.Config()
+        config.load(TEST_CONFIG)
+
     def test_setting(self):
         config = funconf.Config()
         config.set('foo', 'bar', [34, 2, 5])
@@ -134,7 +135,7 @@ class TestConfig(unittest.TestCase):
         self.assertFalse(config['foo_bar'])
         self.assertFalse(config.foo['bar'])
         self.assertRaises(ValueError, config.__setitem__, 'blah', 4)
-        self.assertRaises(ValueError, config.__getitem__, 'blah')
+        self.assertRaises(KeyError, config.__getitem__, 'blah')
 
     def test_dir(self):
         config = funconf.Config()

@@ -130,7 +130,7 @@ configuration state.
 Find out more in the :py:mod:`funconf` module documentation. 
 
 
-.. _demo.py: https://github.com/mjdorma/funconf/blob/master/docs/source/demo.py
+.. _demo.py: https://github.com/mjdorma/funconf/blob/master/docs/source/examples/demo.py
 .. _my.conf: https://github.com/mjdorma/funconf/blob/master/docs/source/my.conf
 .. _begins: https://github.com/aliles/begins
 
