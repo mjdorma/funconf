@@ -1,7 +1,7 @@
 import begin
 import funconf
 
-config = funconf.Config('my.conf')
+config = funconf.Config('demo.conf')
 
 @begin.subcommand
 @config.foo

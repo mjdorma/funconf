@@ -9,9 +9,9 @@ management capability that integrates with the command line interface tool
 Walk through
 ++++++++++++
 
-Taking this example YAML configuration file `my.conf`_::
+Taking this example YAML configuration file `demo.conf`_::
 
-    $ cat my.conf
+    $ cat demo.conf
 
     #
     # Foo
@@ -36,7 +36,7 @@ Applying it to this simple program `demo.py`_::
     import begin
     import funconf
 
-    config = funconf.Config('my.conf')
+    config = funconf.Config('demo.conf')
 
     @begin.subcommand
     @config.foo
@@ -122,7 +122,7 @@ Conclusion
 ++++++++++
 
 The default values read into the :py:class:`funconf.Config` object from
-my.conf will be overridden by `begins`_ when it passes in user defined option
+demo.conf will be overridden by `begins`_ when it passes in user defined option
 values from the command line.  As soon as your program entry has executed, you
 will now have a simple up to date global object which represents the programs
 configuration state. 
@@ -131,6 +131,6 @@ Find out more in the :py:mod:`funconf` module documentation.
 
 
 .. _demo.py: https://github.com/mjdorma/funconf/blob/master/docs/source/examples/demo.py
-.. _my.conf: https://github.com/mjdorma/funconf/blob/master/docs/source/my.conf
+.. _demo.conf: https://github.com/mjdorma/funconf/blob/master/docs/source/examples/demo.conf
 .. _begins: https://github.com/aliles/begins
 

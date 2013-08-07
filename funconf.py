@@ -262,7 +262,6 @@ def lazy_string_cast(model_kwargs):
         for k, param in funcsig.parameters.items():
             if param.default != param.empty:
                 cast_ctrl[k] = (type(v), cast_factory(k, param.default))
-
         @functools.wraps(func)
         def wrapper(**kwargs):
             for k, v in kwargs.items():
