@@ -25,6 +25,7 @@ Project
     roadmap.rst
     funconf.rst
     begins.rst
+    bottle.rst
 
 
 Indices and tables

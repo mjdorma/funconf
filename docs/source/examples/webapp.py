@@ -6,7 +6,8 @@ import funconf
 def hello():
     return "Hello World!"
 
-config = funconf.Config('webapp.conf')
+config = funconf.Config(['webapp.conf',
+                         '~/.webapp.conf')
 
 @begin.start
 @config.web

@@ -9,63 +9,13 @@ management capability that integrates with the command line interface tool
 Walk through
 ++++++++++++
 
-Taking this example YAML configuration file `demo.conf`_::
+Taking this example YAML configuration file `demo.conf`_:
 
-    $ cat demo.conf
+.. literalinclude:: examples/demo.conf 
 
-    #
-    # Foo
-    #
-    foo:
-      bar: 4
-      moo:
-      - how
-      - are
-      - you
+Applying it to this simple program `demo.py`_:
 
-    #
-    # Bread
-    #
-    bread:
-      butter: win
-      milk: fail
-
-
-Applying it to this simple program `demo.py`_::
-   
-    import begin
-    import funconf
-
-    config = funconf.Config('demo.conf')
-
-    @begin.subcommand
-    @config.foo
-    def foo(**k):
-        "This is the foo code"
-        print("Foo got %s" % k)
-        print("Config is:")
-        print(config)
-
-    @begin.subcommand
-    @config.bread
-    def bread(**k):
-        "This is the bread code"
-        print("Bread got %s" % k)
-        print("Config is:")
-        print(config)
-
-    @begin.subcommand
-    @config
-    def run(**k):
-        "This is the run command that controls all"
-        print("Run got %s" % k)
-        print("Config is:")
-        print(config)
-
-    @begin.start
-    def entry():
-        "This is a super dooper program..."
-        pass
+.. literalinclude:: examples/demo.py 
 
 
 You will end up with the following help from the main::
