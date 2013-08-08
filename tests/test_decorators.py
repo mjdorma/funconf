@@ -27,11 +27,25 @@ class TestWrapsKwargs(unittest.TestCase):
         self.assertTrue(kwargs is not main())
 
     def test_wrapped_no_params(self):
-        @funconf.wraps_kwargs({})
+        @funconf.wraps_kwargs()
         def main(**k):
             return k
         self.assertTrue({} == main())
 
+    def test_keyword_with_var(self):
+        @funconf.wraps_kwargs()
+        def main(a=3, **k):
+            return (a, k)
+        a, k = main(a=4)
+        self.assertTrue(k == {})
+        self.assertTrue(a == 4)
+        a, k = main(b=6)
+        self.assertTrue(k == {'b':6})
+        self.assertTrue(a == 3)
+        a, k = main()
+        self.assertTrue(k == {})
+        self.assertTrue(a == 3)
+ 
     def test_with_no_var_keywords(self):
         conf = dict(b=4)
         @funconf.wraps_kwargs(conf)

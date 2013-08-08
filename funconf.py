@@ -124,7 +124,7 @@ except NameError:
 from io import StringIO
 import yaml
 
-def wraps_kwargs(kwarg_defaults):
+def wraps_kwargs(kwarg_defaults={}):
     """Decorate a function to define and extend its default keyword argument
     values.
         
@@ -153,10 +153,11 @@ def wraps_kwargs(kwarg_defaults):
             kwargs_set = set(kwargs)
             for k in kwargs_set.intersection(kwarg_defaults_set):
                 kwarg_defaults[k] = kwargs[k]
-            for k in kwarg_defaults_set.difference(func_defaults_set):
-                if has_var_keyword:
+            if has_var_keyword:
+                for k in kwarg_defaults_set.difference(kwargs_set):
                     kwargs[k] = kwarg_defaults[k]
-                else:
+            else:
+                for k in kwargs_set.difference(func_defaults_set):
                     kwargs.pop(k)
             return func(**kwargs)
         funcsig = signature(func)
