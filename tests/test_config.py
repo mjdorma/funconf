@@ -121,7 +121,7 @@ class TestConfig(unittest.TestCase):
         config = funconf.Config()
         self.assertRaises(ValueError, config.set, 'set', 'foo', True)
         config.set('foo', 'bar', False)
-        self.assertRaises(ValueError, config.set, 'set', 'items', True)
+        self.assertRaises(ValueError, config.set, 'foo', 'items', True)
  
     def test_dirty(self):
         config = funconf.Config()
