@@ -1,14 +1,13 @@
 """Overview.
 =============
 
-This module simplifies the management of function default keyword argument 
-values.
-
-:py:mod:`funconf` introduces two decorators. The first function
+To simplify the management of function default keyword argument values
+:py:mod:`funconf` introduces two new decorators. The first function
 :py:func:`wraps_kwargs` makes it trivial to dynamically define the default
-kwargs for a function.  The second function :py:func:`lazy_string_cast` casts
-input parameters passed in based on the default values of the kwargs and the
-default values of arguments found in the function it is wrapping. 
+kwargs for a function.  The second function :py:func:`lazy_string_cast`
+automatically casts *basestring* values to the type of the keyword default
+values found in the function it is wrapping and the type of the values found in
+the *key:value* object passed into its constructor. 
 
 For configuration, :py:mod:`funconf` borrows from concepts discussed in
 Python's core library *ConfigParser*.  A configuration consists of sections
@@ -74,8 +73,8 @@ As a dictionary ``dict(config)`` the :py:class:`Config` object looks like::
     
 Notice how the configuration *section:options* have been concatenated. This
 facilitates the simple wrapping of an entire configuration file into the kwargs
-of a function.  The following example will print out an equivalent dictionary
-to the printout in the previous example. ::  
+of a function.  The following example will print an equivalent dictionary to
+the printout in the previous example. ::  
 
     @config
     def myfunc(**kwargs):
