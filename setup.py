@@ -10,7 +10,7 @@ requires = ["pyyaml"] + ['funcsigs'] if sys.version_info[:2] < (3, 3) else []
 
 setup(
     name="funconf",
-    version='0.1.0',
+    version='0.1.1',
     py_modules=['funconf'],
     author="Michael Dorman",
     author_email="mjdorma@gmail.com",
