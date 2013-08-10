@@ -9,7 +9,8 @@ def hello():
 config = funconf.Config(['webapp.conf',
                          '~/.webapp.conf'])
 
-@begin.start
+@begin.start(env_prefix="WEBAPP_")
 @config.web
 def main(host='127.0.0.1', port=8080, debug=False):
+    print(config)
     bottle.run(host=host, port=port, debug=debug)
