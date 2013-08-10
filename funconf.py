@@ -124,7 +124,8 @@ except NameError:
 from io import StringIO
 import yaml
 
-def wraps_kwargs(kwarg_defaults={}):
+
+def wraps_kwargs(default_kwargs={}):
     """Decorate a function to define and extend its default keyword argument
     values.
         
@@ -136,55 +137,62 @@ def wraps_kwargs(kwarg_defaults={}):
         def myfunc(**k):
             pass
 
-    The *kwarg_defaults* object needs to satisfy the *MutableMapping* interface
+    The *default_kwargs* object needs to satisfy the *MutableMapping* interface
     definition. When the wrapped function is called the kwargs passed in are
-    used to update the *kwarg_defaults* object. The *kwarg_defaults* object is
-    then passed into the wrapped function i.e. ``wrapped(**kwarg_defaults)``. 
+    used to update the *default_kwargs* object. The *default_kwargs* object is
+    then passed into the wrapped function i.e. ``wrapped(**default_kwargs)``. 
     
-    :param kwarg_defaults: kwargs to be fix into the wrapped function.
-    :type kwarg_defaults: mutable mapping
+    :param default_kwargs: kwargs to be fix into the wrapped function.
+    :type default_kwargs: mutable mapping
     :rtype: decorated function.
     """
     def decorator(func):
-        kwarg_defaults_set = set(kwarg_defaults)
+        default_kwargs_set = set(default_kwargs)
         func_defaults_set = set()
+        override_defaults_set = set()
         has_var_keyword = False
         def wrapper(**kwargs):
             kwargs_set = set(kwargs)
-            for k in kwargs_set.intersection(kwarg_defaults_set):
-                kwarg_defaults[k] = kwargs[k]
+            # Update default_kwargs with new keyword values.
+            for k in kwargs_set.intersection(default_kwargs_set):
+                default_kwargs[k] = kwargs[k]
+            # Override func's default keyword values.
+            for k in override_defaults_set.difference(kwargs_set):
+                kwargs[k] = default_kwargs[k]
             if has_var_keyword:
-                for k in kwarg_defaults_set.difference(kwargs_set):
-                    kwargs[k] = kwarg_defaults[k]
+                # Add default_kwargs keyword values not defined in kwargs.
+                for k in default_kwargs_set.difference(kwargs_set):
+                    kwargs[k] = default_kwargs[k]
             else:
+                # Remove kwargs that func doesn't have defined.
                 for k in kwargs_set.difference(func_defaults_set):
                     kwargs.pop(k)
             return func(**kwargs)
         funcsig = signature(func)
         parameters = []
         for arg, param in funcsig.parameters.items():
-            if arg in kwarg_defaults:
-                continue
-            elif param.default != param.empty:
+            if param.default != param.empty:
                 func_defaults_set.add(arg)
-                param = Parameter(arg, Parameter.KEYWORD_ONLY,
-                                       default=param.default)
-                parameters.append(param)
+                if arg in default_kwargs_set:
+                    override_defaults_set.add(arg)
+                else:
+                    param = Parameter(arg, Parameter.KEYWORD_ONLY,
+                                           default=param.default)
+                    parameters.append(param)
             elif param.kind == param.VAR_KEYWORD:
                 has_var_keyword = True
             else:
                 msg = "%s parameters are not supported" % param.kind 
                 raise ValueError(msg)
         functools.update_wrapper(wrapper, func)
-        for k, v in kwarg_defaults.items():
+        for k, v in default_kwargs.items():
             param = Parameter(k, Parameter.KEYWORD_ONLY, default=v)
             parameters.append(param)
         sig = Signature(parameters=parameters)
         wrapper.__signature__ = sig
         return wrapper
-
-    if inspect.isfunction(kwarg_defaults) or inspect.ismethod(kwarg_defaults):
-        func, kwarg_defaults = kwarg_defaults, {}
+    if inspect.isfunction(default_kwargs) or inspect.ismethod(default_kwargs):
+        func, default_kwargs = default_kwargs, {}
         return decorator(func)
     else:
         return decorator

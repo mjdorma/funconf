@@ -69,7 +69,16 @@ class TestWrapsKwargs(unittest.TestCase):
         @funconf.wraps_kwargs
         def main(test="change me"):
             return test
+        self.assertEqual(main(), "change me")
         self.assertEqual(main(test="changed"), "changed")
+
+    def test_arg_in_kwarg(self):
+        kwargs = dict(blob=4)
+        @funconf.wraps_kwargs(kwargs)
+        def main(blob=3):
+            return blob
+        self.assertEqual(main(), 4)
+        self.assertEqual(main(blob=2), 2)
 
 
 class TestLazyStringCast(unittest.TestCase):
