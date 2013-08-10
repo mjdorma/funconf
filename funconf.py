@@ -125,7 +125,7 @@ from io import StringIO
 import yaml
 
 
-def wraps_kwargs(default_kwargs={}):
+def wraps_kwargs(default_kwargs):
     """Decorate a function to define and extend its default keyword argument
     values.
         
@@ -141,7 +141,8 @@ def wraps_kwargs(default_kwargs={}):
     definition. When the wrapped function is called the kwargs passed in are
     used to update the *default_kwargs* object. The *default_kwargs* object is
     then passed into the wrapped function i.e. ``wrapped(**default_kwargs)``. 
-    
+
+
     :param default_kwargs: kwargs to be fix into the wrapped function.
     :type default_kwargs: mutable mapping
     :rtype: decorated function.
@@ -191,11 +192,7 @@ def wraps_kwargs(default_kwargs={}):
         sig = Signature(parameters=parameters)
         wrapper.__signature__ = sig
         return wrapper
-    if inspect.isfunction(default_kwargs) or inspect.ismethod(default_kwargs):
-        func, default_kwargs = default_kwargs, {}
-        return decorator(func)
-    else:
-        return decorator
+    return decorator
 
 
 def lazy_string_cast(model_kwargs={}):

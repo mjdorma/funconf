@@ -27,13 +27,13 @@ class TestWrapsKwargs(unittest.TestCase):
         self.assertTrue(kwargs is not main())
 
     def test_wrapped_no_params(self):
-        @funconf.wraps_kwargs()
+        @funconf.wraps_kwargs({})
         def main(**k):
             return k
         self.assertTrue({} == main())
 
     def test_keyword_with_var(self):
-        @funconf.wraps_kwargs()
+        @funconf.wraps_kwargs({})
         def main(a=3, **k):
             return (a, k)
         a, k = main(a=4)
@@ -59,18 +59,9 @@ class TestWrapsKwargs(unittest.TestCase):
             pass
         def fixed_arg(a, b):
             pass
-        def fixed_kwargs(k=3, b=4):
-            pass
         decorator = funconf.wraps_kwargs({})
         self.assertRaises(ValueError,  decorator, var_arg)
         self.assertRaises(ValueError,  decorator, fixed_arg)
-
-    def test_defaults_as_func_or_method(self):
-        @funconf.wraps_kwargs
-        def main(test="change me"):
-            return test
-        self.assertEqual(main(), "change me")
-        self.assertEqual(main(test="changed"), "changed")
 
     def test_arg_in_kwarg(self):
         kwargs = dict(blob=4)
