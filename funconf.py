@@ -169,6 +169,7 @@ def wraps_kwargs(default_kwargs):
                 for k in kwargs_set.difference(func_defaults_set):
                     kwargs.pop(k)
             return func(**kwargs)
+
         funcsig = signature(func)
         parameters = []
         for arg, param in funcsig.parameters.items():
@@ -446,9 +447,9 @@ class Config(MutableMapping):
       the defaults of a variable kwargs function.  
     """
 
-    __slots__ = ('_sections', '_reserved', '_lookup')
+    __slots__ = ('_sections', '_reserved', '_lookup', '_strict')
 
-    def __init__(self, filenames=[]):
+    def __init__(self, filenames=[], strict=False):
         """Construct a new Config object.  
         
         This is the root object for a function configuration set.  It is the
@@ -456,9 +457,13 @@ class Config(MutableMapping):
 
         :param filenames: YAML configuration files.
         :type filenames: list of filepaths
+        :param strict: Raise :py:class:`ConfigAttributeError` if a
+                       :py:class:`ConfigSection` doesn't exist
+        :type strict: False 
         """
         self._sections = {}
         self._lookup = {}
+        self._strict = strict 
         self.read(filenames)
 
     def read(self, filenames):
@@ -547,8 +552,11 @@ class Config(MutableMapping):
             return super(Config, self).__getattribute__(y)
         else:
             if y not in self._sections:
-                msg = "Config object has no section '%s'" % (y)
-                raise ConfigAttributeError(msg)
+                if not self._strict:
+                    self._sections[y] = ConfigSection(y, {})
+                else:
+                    msg = "Config object has no section '%s'" % (y)
+                    raise ConfigAttributeError(msg)
             return self._sections[y]
 
     def __setattr__(self, x, y):

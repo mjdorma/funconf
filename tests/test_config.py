@@ -61,13 +61,12 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(len(config.bbb), 4)
 
     @patch('__builtin__.open') 
-    def test_accessing_attributes(self, mock_open):
+    def test_accessing_strict_attributes(self, mock_open):
         mock_open.return_value = StringIO(TEST_CONFIG)
         config = funconf.Config('mocked.conf')
         self.assertEqual(config.aaa.int, 4)
         config.aaa.int = 5
         self.assertEqual(config.aaa.int, 5)
-        self.assertRaises(funconf.ConfigAttributeError, getattr, config, 'nope')
         self.assertRaises(funconf.ConfigAttributeError, getattr, config.aaa,
                 'nope')
         
@@ -86,6 +85,14 @@ class TestConfig(unittest.TestCase):
         mock_open.return_value = StringIO(u("`empty:a df asd Z X324!~ 1"))
         self.assertRaises(yaml.scanner.ScannerError, 
                 funconf.Config, 'mocked.conf')
+
+    def test_strict_config(self):
+        config = funconf.Config(strict=True)
+        self.assertRaises(funconf.ConfigAttributeError, getattr, config, 'nope')
+
+    def test_not_strict_config(self):
+        config = funconf.Config()
+        self.assertTrue(dict(config.foo) == {})
 
     def test_file_doesnt_exist(self):
         funconf.Config(['blaoo.con'])
