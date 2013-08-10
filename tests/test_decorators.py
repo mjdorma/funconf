@@ -65,6 +65,12 @@ class TestWrapsKwargs(unittest.TestCase):
         self.assertRaises(ValueError,  decorator, var_arg)
         self.assertRaises(ValueError,  decorator, fixed_arg)
 
+    def test_defaults_as_func_or_method(self):
+        @funconf.wraps_kwargs
+        def main(test="change me"):
+            return test
+        self.assertEqual(main(test="changed"), "changed")
+
 
 class TestLazyStringCast(unittest.TestCase):
     
@@ -124,5 +130,9 @@ class TestLazyStringCast(unittest.TestCase):
         self.assertTrue(main(a='34.23 232.1')['a'] == [34.23, 232.1])
         self.assertRaises(ValueError, main, a='aaa')
 
-
+    def test_models_as_func_or_method(self):
+        @funconf.lazy_string_cast
+        def main(debug=True):
+            return debug
+        self.assertFalse(main(debug='f'))
 

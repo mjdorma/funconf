@@ -109,6 +109,7 @@ used as a decorator to a function too. Here is an example::
 
 """
 import functools
+import inspect
 from collections import MutableMapping
 import shlex
 from distutils.util import strtobool
@@ -181,7 +182,12 @@ def wraps_kwargs(kwarg_defaults={}):
         sig = Signature(parameters=parameters)
         wrapper.__signature__ = sig
         return wrapper
-    return decorator
+
+    if inspect.isfunction(kwarg_defaults) or inspect.ismethod(kwarg_defaults):
+        func, kwarg_defaults = kwarg_defaults, {}
+        return decorator(func)
+    else:
+        return decorator
 
 
 def lazy_string_cast(model_kwargs={}):
@@ -269,7 +275,8 @@ def lazy_string_cast(model_kwargs={}):
         funcsig = signature(func)
         for k, param in funcsig.parameters.items():
             if param.default != param.empty:
-                cast_ctrl[k] = (type(v), cast_factory(k, param.default))
+                v = param.default
+                cast_ctrl[k] = (type(v), cast_factory(k, v))
         @functools.wraps(func)
         def wrapper(**kwargs):
             for k, v in kwargs.items():
@@ -280,7 +287,11 @@ def lazy_string_cast(model_kwargs={}):
             return func(**kwargs)
         return wrapper
 
-    return decorator
+    if inspect.isfunction(model_kwargs) or inspect.ismethod(model_kwargs):
+        func, model_kwargs = model_kwargs, {}
+        return decorator(func)
+    else:
+        return decorator
 
 
 class ConfigAttributeError(AttributeError): pass
