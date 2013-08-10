@@ -457,8 +457,8 @@ class Config(MutableMapping):
 
         :param filenames: YAML configuration files.
         :type filenames: list of filepaths
-        :param strict: Raise :py:class:`ConfigAttributeError` if a
-                       :py:class:`ConfigSection` doesn't exist
+        :param strict: If True, raise :py:class:`ConfigAttributeError` if a
+                       :py:class:`ConfigSection` doesn't exist.
         :type strict: False 
         """
         self._sections = {}
