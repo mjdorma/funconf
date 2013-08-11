@@ -15,19 +15,19 @@ Applying it to this simple program `webapp.py`_:
 .. literalinclude:: examples/webapp.py 
 
 
-The configuration changes the default host address to *0.0.0.0*.  In this
-program, configuration is applied and overridden in the following order:
+The above configuration overrides the default host address to *0.0.0.0*.  In
+this program, configuration is applied and overridden in the following order:
 
-* Decorated function's default keyword value.
-* Defined configuration options. 
-* Environment variables.
-* Input command line interface parameters.
+1. Decorated function's default keyword value.
+2. Defined configuration options. 
+3. Environment variables.
+4. Input command line interface parameters.
 
 The port option has been included into the config file to ensure that the
-:py:class:`funconf.Config` object contains the updated *port* value that may
-have been set in an environment variable or set through the CLI. Now we have a
-neat way of getting the global configuration state for both *host* and *port*
-under the ``config.web`` object.
+:py:class:`funconf.Config` object contains the *port* value that has been
+provided by `begins`_. Now we have a neat way of storing and accessing the
+application's global configuration state for both *host* and *port* under the
+``config.web`` object.
 
 
 Here is what the help printout should look like for this application::
