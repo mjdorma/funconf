@@ -121,6 +121,10 @@ try:
     u = unicode
 except NameError:
     u = lambda x: x
+try:
+    basestring = (str, bytes) 
+except NameError:
+    basestring = types.StingTypes
 from io import StringIO
 import yaml
 
@@ -340,7 +344,7 @@ class ConfigSection(MutableMapping):
 
     def __dir__(self):
         "Return a list of option names and the Base class attributes."
-        return dir(super(ConfigSection, self)) + self._options.keys()
+        return dir(super(ConfigSection, self)) + list(self._options)
 
     def __getattribute__(self, y):
         """Return a option value where y is the *option* name.  Else, return
@@ -554,7 +558,7 @@ class Config(MutableMapping):
 
     def __dir__(self):
         "Return a list of section names and the Base class attributes."
-        return dir(super(Config, self)) + self._sections.keys()
+        return dir(super(Config, self)) + list(self._sections)
 
     def __getattribute__(self, y):
         """Return a section where y is the *section* name.  Else, return the

@@ -12,6 +12,12 @@ try:
     u = unicode
 except NameError:
     u = lambda x: x
+
+if sys.version_info[0] == 2:
+    builtins_mod = "__builtin__"
+else:
+    builtins_mod = "builtins"
+     
 from io import StringIO
 from mock import patch
 import yaml
@@ -52,7 +58,7 @@ bbb:
 
 class TestConfig(unittest.TestCase):
 
-    @patch('__builtin__.open') 
+    @patch('%s.open' % builtins_mod) 
     def test_print_config(self, mock_open):
         mock_open.return_value = StringIO(TEST_CONFIG)
         config = funconf.Config('mocked.conf')
@@ -60,7 +66,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(len(config), 8)
         self.assertEqual(len(config.bbb), 4)
 
-    @patch('__builtin__.open') 
+    @patch('%s.open' % builtins_mod) 
     def test_accessing_strict_attributes(self, mock_open):
         mock_open.return_value = StringIO(TEST_CONFIG)
         config = funconf.Config('mocked.conf')
@@ -70,17 +76,17 @@ class TestConfig(unittest.TestCase):
         self.assertRaises(funconf.ConfigAttributeError, getattr, config.aaa,
                 'nope')
         
-    @patch('__builtin__.open') 
+    @patch('%s.open' % builtins_mod) 
     def test_empty_config(self, mock_open):
         mock_open.return_value = StringIO(u(""))
         config = funconf.Config('mocked.conf')
 
-    @patch('__builtin__.open')
+    @patch('%s.open' % builtins_mod)
     def test_empty_section(self, mock_open):
         mock_open.return_value = StringIO(u("empty: 1"))
         config = funconf.Config('mocked.conf')
 
-    @patch('__builtin__.open')
+    @patch('%s.open' % builtins_mod)
     def test_broken_yaml(self, mock_open):
         mock_open.return_value = StringIO(u("`empty:a df asd Z X324!~ 1"))
         self.assertRaises(yaml.scanner.ScannerError, 
