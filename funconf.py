@@ -402,7 +402,7 @@ class ConfigSection(MutableMapping):
         self._dirty, d = False, self._dirty
         return d
 
-    def __call__(self, func):
+    def __call__(self, func=None, **kwargs):
         """The :py:class:`ConfigSection` object can be used as a function
         decorator.  
 
@@ -421,12 +421,23 @@ class ConfigSection(MutableMapping):
             def func(**k):
                 pass
 
-        :param func: function to be wrapped.
-        :type func: variable kwargs function 
-        :rtype: wrapped function with defined kwargs defaults bound to this 
-                :py:class:`ConfigSection` object.
+        :param func: Decorator parameter. The function or method to be wrapped.
+        :type func: function or method 
+        :param lazy: Factory parameter. Turns lazy_string_cast on or off.
+        :type lazy: Boolean value default True
+        :rtype: As a factory returns decorator function. As a decorator
+                function returns a decorated function. 
         """
-        return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
+        lazy = kwargs.get('lazy', True)
+        def _wraps(func):
+            if lazy:
+                return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
+            else:
+                return wraps_kwargs(self)(func)
+        if inspect.isfunction(func) or inspect.ismethod(func):
+            return _wraps(func)
+        else:
+            return _wraps
 
 
 ConfigSection._reserved = set(dir(ConfigSection))
@@ -596,7 +607,7 @@ class Config(MutableMapping):
         section = self._sections[s]
         return section[option]
 
-    def __call__(self, func):
+    def __call__(self, func=None, **kwargs):
         """The :py:class:`Config` object can be used as a function decorator.  
         
         Applying this decorator to a function which takes variable kwargs will
@@ -614,13 +625,23 @@ class Config(MutableMapping):
             def func(**k):
                 pass
 
-        :param func: function to be wrapped.
-        :type func: variable kwargs function 
-        :rtype: wrapped function with defined kwargs bound to this
-                :py:class:`Config` object.
+        :param func: Decorator parameter. The function or method to be wrapped.
+        :type func: function or method 
+        :param lazy: Factory parameter. Turns lazy_string_cast on or off.
+        :type lazy: Boolean value default True
+        :rtype: As a factory returns decorator function. As a decorator
+                function returns a decorated function. 
         """
-        return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
-
+        lazy = kwargs.get('lazy', True)
+        def _wraps(func):
+            if lazy:
+                return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
+            else:
+                return wraps_kwargs(self)(func)
+        if inspect.isfunction(func) or inspect.ismethod(func):
+            return _wraps(func)
+        else:
+            return _wraps
 
 Config._reserved = set(dir(Config))
      

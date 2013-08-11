@@ -166,3 +166,29 @@ class TestConfig(unittest.TestCase):
             self.assertFalse(k['bar'])
         func()
 
+    def test_not_lazy_flag(self):
+        config = funconf.Config()
+        @config(lazy=False)
+        def func(foo=True):
+            return foo 
+        self.assertEqual(func(foo="y"), "y")
+
+        @config.bar(lazy=False)
+        def func(foo=True):
+            return foo 
+        self.assertEqual(func(foo="y"), "y")
+
+    def test_is_lazy_flag(self):
+        config = funconf.Config()
+        @config(lazy=True)
+        def func(foo=True):
+            return foo 
+        self.assertEqual(func(foo="y"), True)
+
+        @config.bar(lazy=True)
+        def func(foo=True):
+            return foo 
+        self.assertEqual(func(foo="y"), True)
+
+
+
