@@ -118,14 +118,9 @@ try:
 except ImportError:
     from funcsigs import signature, Signature, Parameter 
 try:
-    u = unicode
-except NameError:
-    u = lambda x: x
-try:
     basestring = (str, bytes) 
 except NameError:
     basestring = types.StingTypes
-from io import StringIO
 import yaml
 
 
@@ -513,8 +508,6 @@ class Config(MutableMapping):
         :param stream: the configuration to be loaded using ``yaml.load``.
         :type stream: stream object
         """
-        if isinstance(stream, basestring):
-            stream = StringIO(u(stream))
         config = yaml.load(stream)
         if not isinstance(config, dict):
             return
