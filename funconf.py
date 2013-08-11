@@ -2,9 +2,9 @@
 =============
 
 To simplify the management of function default keyword argument values
-:py:mod:`funconf` introduces two new decorators. The first function
+:py:mod:`funconf` introduces two new decorators. The first decorator 
 :py:func:`wraps_kwargs` makes it trivial to dynamically define the default
-kwargs for a function.  The second function :py:func:`lazy_string_cast`
+kwargs for a function.  The second decorator :py:func:`lazy_string_cast`
 automatically casts *basestring* values to the type of the keyword default
 values found in the function it is wrapping and the type of the values found in
 the *key:value* object passed into its constructor. 
@@ -133,14 +133,23 @@ def wraps_kwargs(default_kwargs):
 
         mydict = {a=4, b=2}
         @wraps_kwargs(mydict)
-        def myfunc(**k):
+        def myfunc(a=2, **k):
             pass
 
     The *default_kwargs* object needs to satisfy the *MutableMapping* interface
-    definition. When the wrapped function is called the kwargs passed in are
-    used to update the *default_kwargs* object. The *default_kwargs* object is
-    then passed into the wrapped function i.e. ``wrapped(**default_kwargs)``. 
+    definition. When a wrapped function is called the following transforms
+    occur over *kwargs* before it is passed into the wrapped function:
 
+        1. *default_kwargs* is updated with keywords found in the *kwargs*.
+        2. The functions default keyword arguments that were not in *kwargs*
+           and are defined by *default_kwargs* will be copied into *kwargs*
+           from the *default_kwargs* object.
+        3. If the wrapped function has a variable keyword argument defined 
+           (i.e ``**k``) then the keywords defined by *default_kwargs* that are
+           not defined in *kwargs* will be copied into *kwargs*.
+        4. If the wrapped function had no variable keyword argument defined,
+           then the values found in *kwargs* that are no in the wrapped
+           function's keyword argument list  will be popped from *kwargs*.
 
     :param default_kwargs: kwargs to be fix into the wrapped function.
     :type default_kwargs: mutable mapping
@@ -217,7 +226,7 @@ def lazy_string_cast(model_kwargs={}):
     
     This example demonstrates how :py:func:`lazy_string_cast` can be applied::
         
-        @lazy_string_cast()
+        @lazy_string_cast
         def main(a=4, b=[4, 2, 55]):
             pass
 
@@ -308,11 +317,11 @@ class ConfigSection(MutableMapping):
     
     The following lists the main features of this class:
 
-    * exposes a configuration *option:value* through a standard implementation
-      of the *MutableMapping* abstract type.
-    * when cast to a string it outputs its state in YAML.
-    * as a decorator it utilises the :py:func:`wraps_kwargs` to change
-      the defaults of a variable kwargs function.  
+        1. Exposes a configuration *option:value* through a standard
+           implementation of the *MutableMapping* abstract type.
+        2. When cast to a string it outputs YAML.
+        3. As a decorator it utilises the :py:func:`wraps_kwargs` to change
+           the defaults of a variable kwargs function.  
     """
  
     __slots__ = ('_dirty', '_options', '_section', '_reserved')
@@ -448,13 +457,14 @@ class Config(MutableMapping):
     
     The following lists the main features of this class:
 
-    * aggregates :py:class:`ConfigSection` objects that are accessible through
-      attributes.
-    * exposes a translation of the configuration into section_option:value
-      through a standard implementation of the *MutableMapping* abstract type.
-    * when cast to a string it outputs its state in YAML.
-    * as a decorator it utilises the :py:func:`wraps_kwargs` to change
-      the defaults of a variable kwargs function.  
+        1. Aggregates :py:class:`ConfigSection` objects that are accessible
+           through attributes.
+        2. Exposes a translation of the configuration into section_option:value
+           through a standard implementation of the *MutableMapping* abstract
+           type.
+        3. When cast to a string it outputs YAML.
+        4. As a decorator it utilises the :py:func:`wraps_kwargs` to change the
+           defaults of a variable kwargs function.  
     """
 
     __slots__ = ('_sections', '_reserved', '_lookup', '_strict')

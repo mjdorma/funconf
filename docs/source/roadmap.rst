@@ -18,7 +18,10 @@ This is a rough roadmap to the first beta release of *funconf*.
 
 :Version 0.3 - Beta release:
 
-* Trial by fire!
+* Completed the trial by fire!  
 
 
+:Version 1.0 - Stable release:
+
+* Tried and trued.
 
