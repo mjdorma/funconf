@@ -118,9 +118,9 @@ try:
 except ImportError:
     from funcsigs import signature, Signature, Parameter 
 try:
-    basestring = (str, bytes) 
+    basestring = basestring
 except NameError:
-    basestring = types.StingTypes
+    basestring = (str, bytes) 
 import yaml
 
 
@@ -325,8 +325,8 @@ class ConfigSection(MutableMapping):
        
         :param section: defines the name for this section.
         :type section: str
-        :param options: is the mapping containing an initialised set of
-                        *option:values* 
+        :param options: kwargs to initialise this :py:class:`ConfigSection`'s
+                        *option:value* 
         :type options: mutable mapping
         """
         self._section = section
