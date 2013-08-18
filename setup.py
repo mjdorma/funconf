@@ -4,10 +4,14 @@ import re
 import sys
 
 
+requires = ["pyyaml"]
+VERSION = sys.version_info[:2] 
+if VERSION < (3, 3):
+    requires.append('funcsigs')
+if VERSION == (2, 6):
+    requires.append('ordereddict')
+
 PYTHON3K = sys.version_info[0] > 2
-requires = ["pyyaml"] + ['funcsigs'] if sys.version_info[:2] < (3, 3) else []
-
-
 setup(
     name="funconf",
     version='0.2.0',

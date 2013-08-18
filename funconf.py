@@ -111,7 +111,10 @@ used as a decorator to a function too. Here is an example::
 import functools
 import inspect
 from collections import MutableMapping
-from collections import OrderedDict 
+try:
+    from collections import OrderedDict 
+except ImportError:
+    from ordereddict import OrderedDict
 import shlex
 from distutils.util import strtobool
 try:
