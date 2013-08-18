@@ -111,6 +111,7 @@ used as a decorator to a function too. Here is an example::
 import functools
 import inspect
 from collections import MutableMapping
+from collections import OrderedDict 
 import shlex
 from distutils.util import strtobool
 try:
@@ -124,7 +125,8 @@ except NameError:
 import yaml
 
 
-def wraps_kwargs(default_kwargs):
+def wraps_kwargs(default_kwargs, hide_var_keyword=True,
+                                 hide_var_positional=True):
     """Decorate a function to define and extend its default keyword argument
     values.
         
@@ -156,49 +158,71 @@ def wraps_kwargs(default_kwargs):
     :rtype: decorated function.
     """
     def decorator(func):
-        default_kwargs_set = set(default_kwargs)
-        func_defaults_set = set()
-        override_defaults_set = set()
-        has_var_keyword = False
-        def wrapper(**kwargs):
-            kwargs_set = set(kwargs)
-            # Update default_kwargs with new keyword values.
-            for k in kwargs_set.intersection(default_kwargs_set):
-                default_kwargs[k] = kwargs[k]
+        # Build new signature, cloak var args as required.
+        original_sig = signature(func)
+        has_var_keyword = False 
+        var_positional = '' 
+        parameters = OrderedDict()
+        # Add positional arguments and keywords first
+        for name, param in original_sig.parameters.items():
+            if param.kind == param.VAR_KEYWORD:
+                has_var_keyword = True
+            elif param.kind == param.VAR_POSITIONAL:
+                var_positional = name
+            else:
+                default = default_kwargs.get(name, param.default)
+                param = Parameter(name, param.kind, default=default)
+                parameters[name] = param
+        # Add remainder defualt_kwargs as keyword only variables 
+        for name, value in default_kwargs.items():
+            if name not in parameters:
+                param = Parameter(name, Parameter.KEYWORD_ONLY, default=value)
+                parameters[name] = param
+        # Add the var positional
+        if not hide_var_positional and var_positional:
+            parameters[var_positional] = Parameter(var_positional, 
+                                                   Parameter.VAR_POSITIONAL)
+        # Add the var keyword
+        parameters['_kwargs'] = Parameter('_kwargs', Parameter.VAR_KEYWORD)
+        sig = original_sig.replace(parameters=parameters.values())
+
+        # Wrapper function.
+        function_defaults = set(original_sig.parameters)
+        override_defaults = set(default_kwargs).intersection(function_defaults)
+        def wrapper(*args, **kwargs):
+            # Build new kwargs and args.
+            arguments = OrderedDict(sig.bind(*args, **kwargs).arguments)
+            kwargs = {}
+            args = []
+            updates = {}
+            for name, value in arguments.items():
+                if name == var_positional:
+                    args.extend(value)
+                elif name == '_kwargs': 
+                    for k, v in value.items():
+                        kwargs[k] = v
+                        if k in default_kwargs:
+                            updates[name] = v
+                else:
+                    if name in default_kwargs:
+                        updates[name] = value
+                    kwargs[name] = value
+            default_kwargs.update(updates)
             # Override func's default keyword values.
-            for k in override_defaults_set.difference(kwargs_set):
-                kwargs[k] = default_kwargs[k]
+            for name in override_defaults.difference(updates):
+                kwargs[name] = default_kwargs[name]
             if has_var_keyword:
                 # Add default_kwargs keyword values not defined in kwargs.
-                for k in default_kwargs_set.difference(kwargs_set):
+                for k in set(default_kwargs).difference(kwargs):
                     kwargs[k] = default_kwargs[k]
             else:
                 # Remove kwargs that func doesn't have defined.
-                for k in kwargs_set.difference(func_defaults_set):
+                for k in set(kwargs).difference(function_defaults):
                     kwargs.pop(k)
-            return func(**kwargs)
+            return func(*args, **kwargs)
 
-        funcsig = signature(func)
-        parameters = []
-        for arg, param in funcsig.parameters.items():
-            if param.default != param.empty:
-                func_defaults_set.add(arg)
-                if arg in default_kwargs_set:
-                    override_defaults_set.add(arg)
-                else:
-                    param = Parameter(arg, Parameter.KEYWORD_ONLY,
-                                           default=param.default)
-                    parameters.append(param)
-            elif param.kind == param.VAR_KEYWORD:
-                has_var_keyword = True
-            else:
-                msg = "%s parameters are not supported" % param.kind 
-                raise ValueError(msg)
+        # Return wrapped up func with the cloaked signature. 
         functools.update_wrapper(wrapper, func)
-        for k, v in default_kwargs.items():
-            param = Parameter(k, Parameter.KEYWORD_ONLY, default=v)
-            parameters.append(param)
-        sig = Signature(parameters=parameters)
         wrapper.__signature__ = sig
         return wrapper
     return decorator
@@ -283,22 +307,41 @@ def lazy_string_cast(model_kwargs={}):
             return make_cast_func(cast_type, k, vtype)
 
     def decorator(func):
+        sig = signature(func)
         cast_ctrl = {}
-        for k, v in model_kwargs.items():
-            cast_ctrl[k] = (type(v), cast_factory(k, v))
-        funcsig = signature(func)
-        for k, param in funcsig.parameters.items():
-            if param.default != param.empty:
-                v = param.default
-                cast_ctrl[k] = (type(v), cast_factory(k, v))
+        var_keyword, var_positional = '', '' 
+        for name, param in sig.parameters.items():
+            if param.default != param.empty and \
+                    not isinstance(param.default, basestring):
+                cast_ctrl[name] = cast_factory(name, param.default)
+            if param.kind == param.VAR_KEYWORD:
+                var_keyword = name
+            elif param.kind == param.VAR_POSITIONAL:
+                var_positional = name
+        for name, value in model_kwargs.items():
+            if not isinstance(value, basestring):
+                cast_ctrl[name] = cast_factory(name, value)
+
         @functools.wraps(func)
-        def wrapper(**kwargs):
-            for k, v in kwargs.items():
-                if k in cast_ctrl:
-                    vtype, cast_func = cast_ctrl[k]
-                    if not isinstance(v, vtype) and isinstance(v, basestring): 
-                        kwargs[k] = cast_func(v)
-            return func(**kwargs)
+        def wrapper(*args, **kwargs):
+            arguments = OrderedDict(sig.bind(*args, **kwargs).arguments)
+            # build keyword arguments            
+            kwargs = arguments.pop(var_keyword, {})
+            for name, value in kwargs.items():
+                if isinstance(value, basestring) and name in cast_ctrl:
+                    cast_func = cast_ctrl[name]
+                    kwargs[name] = cast_func(value)
+            # build positional arguments
+            args = []
+            for name, value in arguments.items():
+                if name == var_positional:
+                    args.extend(value)
+                else:
+                    if isinstance(value, basestring) and name in cast_ctrl:
+                        cast_func = cast_ctrl[name]
+                        value = cast_func(value)
+                    args.append(value)
+            return func(*args, **kwargs)
         return wrapper
 
     if inspect.isfunction(model_kwargs) or inspect.ismethod(model_kwargs):
@@ -410,7 +453,7 @@ class ConfigSection(MutableMapping):
         self._dirty, d = False, self._dirty
         return d
 
-    def __call__(self, func=None, **kwargs):
+    def __call__(self, func=None, lazy=True):
         """The :py:class:`ConfigSection` object can be used as a function
         decorator.  
 
@@ -436,16 +479,12 @@ class ConfigSection(MutableMapping):
         :rtype: As a factory returns decorator function. As a decorator
                 function returns a decorated function. 
         """
-        lazy = kwargs.get('lazy', True)
-        def _wraps(func):
-            if lazy:
-                return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
-            else:
-                return wraps_kwargs(self)(func)
-        if inspect.isfunction(func) or inspect.ismethod(func):
-            return _wraps(func)
+        if func is None:
+            return functools.partial(self, lazy=lazy)
+        if lazy:
+            return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
         else:
-            return _wraps
+            return wraps_kwargs(self)(func)
 
 
 ConfigSection._reserved = set(dir(ConfigSection))
@@ -614,7 +653,7 @@ class Config(MutableMapping):
         section = self._sections[s]
         return section[option]
 
-    def __call__(self, func=None, **kwargs):
+    def __call__(self, func=None, lazy=True):
         """The :py:class:`Config` object can be used as a function decorator.  
         
         Applying this decorator to a function which takes variable kwargs will
@@ -639,16 +678,13 @@ class Config(MutableMapping):
         :rtype: As a factory returns decorator function. As a decorator
                 function returns a decorated function. 
         """
-        lazy = kwargs.get('lazy', True)
-        def _wraps(func):
-            if lazy:
-                return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
-            else:
-                return wraps_kwargs(self)(func)
-        if inspect.isfunction(func) or inspect.ismethod(func):
-            return _wraps(func)
+        if func is None:
+            return functools.partial(self, lazy=lazy)
+        if lazy:
+            return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
         else:
-            return _wraps
+            return wraps_kwargs(self)(func)
+
 
 Config._reserved = set(dir(Config))
      

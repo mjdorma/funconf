@@ -17,13 +17,14 @@ import funconf
 class TestWrapsKwargs(unittest.TestCase):
 
     def test_wrapped(self):
-        kwargs = dict(a=1, b=2)
+        kwargs = dict(a=1)
         @funconf.wraps_kwargs(kwargs)
         def main(**k):
             return k
         self.assertTrue(kwargs == main())
         self.assertTrue(kwargs == main(a=5))
         self.assertTrue(kwargs != main(c=5))
+        self.assertEqual({'a':5, 'c':5}, main(c=5))
         self.assertTrue(kwargs is not main())
 
     def test_wrapped_no_params(self):
@@ -54,14 +55,16 @@ class TestWrapsKwargs(unittest.TestCase):
         self.assertTrue(main(b=5) == 4)
         self.assertTrue(dict(b=5) == conf)
 
-    def test_non_var_keyword(self):
-        def var_arg(*a):
-            pass
-        def fixed_arg(a, b):
-            pass
-        decorator = funconf.wraps_kwargs({})
-        self.assertRaises(ValueError,  decorator, var_arg)
-        self.assertRaises(ValueError,  decorator, fixed_arg)
+    def test_var_arg(self):
+        conf = dict(a=4)
+        @funconf.wraps_kwargs(conf)
+        def main(a, b):
+            self.assertEqual(conf, {'a':a})
+        main(4, 5)
+        main('afs', 'foo')
+
+    def test_fixed_arg(self):
+        pass
 
     def test_arg_in_kwarg(self):
         kwargs = dict(blob=4)
@@ -135,4 +138,30 @@ class TestLazyStringCast(unittest.TestCase):
         def main(debug=True):
             return debug
         self.assertFalse(main(debug='f'))
+
+    def test_positional(self):
+        @funconf.lazy_string_cast(dict(debug=True))
+        def main(debug):
+            return debug
+        self.assertEqual(main('f'), False)
+
+    def test_var_pos_and_var_keyword(self):
+        @funconf.lazy_string_cast(dict(debug=True, foobar=4, moo=3))
+        def main(debug, foobar=6, *a, **k):
+            return debug, foobar, k, a
+        debug, foobar, k, a = main('f', 34, 65, 'hi', moo='24')
+        self.assertEqual(debug, False)
+        self.assertEqual(foobar, 34)
+        self.assertEqual(a, (65,'hi'))
+        self.assertEqual(k, {'moo':24})
+
+    def test_no_model_var_pos_and_var_keyword(self):
+        @funconf.lazy_string_cast
+        def main(debug, foobar=6, *a, **k):
+            return debug, foobar, k, a
+        debug, foobar, k, a = main('f', 34, 65, 'hi', moo='24')
+        self.assertEqual(debug, 'f')
+        self.assertEqual(foobar, 34)
+        self.assertEqual(a, (65,'hi'))
+        self.assertEqual(k, {'moo':'24'})
 
