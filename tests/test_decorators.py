@@ -55,7 +55,7 @@ class TestWrapsKwargs(unittest.TestCase):
         self.assertTrue(main(b=5) == 4)
         self.assertTrue(dict(b=5) == conf)
 
-    def test_var_arg(self):
+    def test_positional_arg(self):
         conf = dict(a=4)
         @funconf.wraps_kwargs(conf)
         def main(a, b):
@@ -63,16 +63,65 @@ class TestWrapsKwargs(unittest.TestCase):
         main(4, 5)
         main('afs', 'foo')
 
-    def test_fixed_arg(self):
-        pass
+    def test_positional_keyword_arg(self):
+        conf = dict(a=4)
+        @funconf.wraps_kwargs(conf)
+        def main(b, a=2):
+            return a
+        self.assertEqual(main(-1, 33), 33)
+        self.assertEqual(main(-1), 33)
+        self.assertEqual(conf, {'a':33})
+        self.assertEqual(main(a=5, b=-1), 5)
+        self.assertEqual(conf, {'a':5})
 
     def test_arg_in_kwarg(self):
-        kwargs = dict(blob=4)
-        @funconf.wraps_kwargs(kwargs)
+        conf = dict(blob=4)
+        @funconf.wraps_kwargs(conf)
         def main(blob=3):
             return blob
         self.assertEqual(main(), 4)
         self.assertEqual(main(blob=2), 2)
+
+    def test_hide_var_keyword(self):
+        conf = dict()
+        @funconf.wraps_kwargs(conf, hide_var_keyword=True)
+        def main(a=3, **k):
+            pass
+        main(1)
+        sig = signature(main)
+        self.assertTrue('k' not in sig.parameters)
+
+    def test_show_var_keyword(self):
+        conf = dict()
+        @funconf.wraps_kwargs(conf, hide_var_keyword=False)
+        def main(b, a=3, *p, **k):
+            pass
+        main(1)
+        sig = signature(main)
+        self.assertTrue('k' in sig.parameters)
+        k = sig.parameters['k']
+        self.assertEqual(k.kind, k.VAR_KEYWORD)
+
+    def test_hide_var_positional(self):
+        conf = dict()
+        @funconf.wraps_kwargs(conf, hide_var_positional=True)
+        def main(b, a=3, *p, **k):
+            pass
+        main(1)
+        sig = signature(main)
+        self.assertTrue('p' not in sig.parameters)
+
+    def test_show_var_positional(self):
+        conf = dict()
+        @funconf.wraps_kwargs(conf, hide_var_positional=False)
+        def main(b, a=3, *p, **k):
+            pass
+        main(1)
+        sig = signature(main)
+        self.assertTrue('p' in sig.parameters)
+        k = sig.parameters['p']
+        self.assertEqual(k.kind, k.VAR_POSITIONAL)
+
 
 
 class TestLazyStringCast(unittest.TestCase):

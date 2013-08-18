@@ -125,8 +125,8 @@ except NameError:
 import yaml
 
 
-def wraps_kwargs(default_kwargs, hide_var_keyword=True,
-                                 hide_var_positional=True):
+def wraps_kwargs(default_kwargs, hide_var_keyword=False,
+                                 hide_var_positional=False):
     """Decorate a function to define and extend its default keyword argument
     values.
         
@@ -158,49 +158,69 @@ def wraps_kwargs(default_kwargs, hide_var_keyword=True,
     :rtype: decorated function.
     """
     def decorator(func):
-        # Build new signature, cloak var args as required.
+        # Build new signature.
         original_sig = signature(func)
-        has_var_keyword = False 
+        var_keyword = False 
         var_positional = '' 
         parameters = OrderedDict()
-        # Add positional arguments and keywords first
+        # Add positional arguments and keywords first.
         for name, param in original_sig.parameters.items():
             if param.kind == param.VAR_KEYWORD:
-                has_var_keyword = True
+                var_keyword = name
             elif param.kind == param.VAR_POSITIONAL:
                 var_positional = name
             else:
                 default = default_kwargs.get(name, param.default)
-                param = Parameter(name, param.kind, default=default)
+                param = Parameter(name, param.POSITIONAL_OR_KEYWORD,
+                                        default=default)
                 parameters[name] = param
-        # Add remainder defualt_kwargs as keyword only variables 
+        # Add var positional.
+        _var_args_name = var_positional if var_positional else '_hidden_args'
+        parameters[_var_args_name] = Parameter(_var_args_name, 
+                                               Parameter.VAR_POSITIONAL)
+        # Add remainder defualt_kwargs as keyword only variables .
         for name, value in default_kwargs.items():
             if name not in parameters:
                 param = Parameter(name, Parameter.KEYWORD_ONLY, default=value)
                 parameters[name] = param
-        # Add the var positional
-        if not hide_var_positional and var_positional:
-            parameters[var_positional] = Parameter(var_positional, 
-                                                   Parameter.VAR_POSITIONAL)
-        # Add the var keyword
-        parameters['_kwargs'] = Parameter('_kwargs', Parameter.VAR_KEYWORD)
-        sig = original_sig.replace(parameters=parameters.values())
+        # Add var keyword.
+        _var_kwargs_name = var_keyword if var_keyword else '_hidden_kwargs'
+        parameters[_var_kwargs_name] = Parameter(_var_kwargs_name, 
+                                               Parameter.VAR_KEYWORD)
+        # Build our inner wrapper signature .
+        wrapper_sig = original_sig.replace(parameters=parameters.values())
+        # Remove cloaked var arguments.
+        if hide_var_positional:
+            parameters.pop(_var_args_name)
+        if hide_var_keyword:
+            parameters.pop(_var_kwargs_name)
+        cloak_sig = original_sig.replace(parameters=parameters.values())
 
         # Wrapper function.
         function_defaults = set(original_sig.parameters)
         override_defaults = set(default_kwargs).intersection(function_defaults)
         def wrapper(*args, **kwargs):
             # Build new kwargs and args.
-            arguments = OrderedDict(sig.bind(*args, **kwargs).arguments)
+            arguments = OrderedDict(wrapper_sig.bind(*args, **kwargs).arguments)
             kwargs = {}
             args = []
             updates = {}
             for name, value in arguments.items():
                 if name == var_positional:
                     args.extend(value)
-                elif name == '_kwargs': 
+                elif name == '_hidden_args':
+                    # We can't update config with positional arguments that
+                    # are not intended for the wrapped func.  
+                    pass
+                elif name == var_keyword: 
                     for k, v in value.items():
                         kwargs[k] = v
+                        if k in default_kwargs:
+                            updates[name] = v
+                elif name == '_hidden_kwargs':
+                    # Keyword arguments not defined in the wrapped func can be
+                    # updated into our configuration. 
+                    for k, v in value.items():
                         if k in default_kwargs:
                             updates[name] = v
                 else:
@@ -211,7 +231,7 @@ def wraps_kwargs(default_kwargs, hide_var_keyword=True,
             # Override func's default keyword values.
             for name in override_defaults.difference(updates):
                 kwargs[name] = default_kwargs[name]
-            if has_var_keyword:
+            if var_keyword:
                 # Add default_kwargs keyword values not defined in kwargs.
                 for k in set(default_kwargs).difference(kwargs):
                     kwargs[k] = default_kwargs[k]
@@ -223,7 +243,7 @@ def wraps_kwargs(default_kwargs, hide_var_keyword=True,
 
         # Return wrapped up func with the cloaked signature. 
         functools.update_wrapper(wrapper, func)
-        wrapper.__signature__ = sig
+        wrapper.__signature__ = cloak_sig
         return wrapper
     return decorator
 
@@ -481,10 +501,12 @@ class ConfigSection(MutableMapping):
         """
         if func is None:
             return functools.partial(self, lazy=lazy)
+        wrapped = wraps_kwargs(self, hide_var_positional=True,
+                                     hide_var_keyword=True)(func)
         if lazy:
-            return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
+            return lazy_string_cast(self)(wrapped) 
         else:
-            return wraps_kwargs(self)(func)
+            return wrapped
 
 
 ConfigSection._reserved = set(dir(ConfigSection))
@@ -680,10 +702,12 @@ class Config(MutableMapping):
         """
         if func is None:
             return functools.partial(self, lazy=lazy)
+        wrapped = wraps_kwargs(self, hide_var_positional=True,
+                                     hide_var_keyword=True)(func)
         if lazy:
-            return lazy_string_cast(self)(wraps_kwargs(self)(func)) 
+            return lazy_string_cast(self)(wrapped) 
         else:
-            return wraps_kwargs(self)(func)
+            return wrapped
 
 
 Config._reserved = set(dir(Config))

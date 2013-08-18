@@ -178,7 +178,6 @@ class TestConfig(unittest.TestCase):
         def func(foo=True):
             return foo 
         self.assertEqual(func(foo="y"), "y")
-
         @config.bar(lazy=False)
         def func(foo=True):
             return foo 
@@ -190,7 +189,6 @@ class TestConfig(unittest.TestCase):
         def func(foo=True):
             return foo 
         self.assertEqual(func(foo="y"), True)
-
         @config.bar(lazy=True)
         def func(foo=True):
             return foo 
