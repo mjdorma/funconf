@@ -18,7 +18,7 @@ class TestWrapsKwargs(unittest.TestCase):
 
     def test_wrapped(self):
         kwargs = dict(a=1)
-        @funconf.wraps_kwargs(kwargs)
+        @funconf.wraps_parameters(kwargs)
         def main(**k):
             return k
         self.assertTrue(kwargs == main())
@@ -28,13 +28,13 @@ class TestWrapsKwargs(unittest.TestCase):
         self.assertTrue(kwargs is not main())
 
     def test_wrapped_no_params(self):
-        @funconf.wraps_kwargs({})
+        @funconf.wraps_parameters({})
         def main(**k):
             return k
         self.assertTrue({} == main())
 
     def test_keyword_with_var(self):
-        @funconf.wraps_kwargs({})
+        @funconf.wraps_parameters({})
         def main(a=3, **k):
             return (a, k)
         a, k = main(a=4)
@@ -49,7 +49,7 @@ class TestWrapsKwargs(unittest.TestCase):
  
     def test_with_no_var_keywords(self):
         conf = dict(b=4)
-        @funconf.wraps_kwargs(conf)
+        @funconf.wraps_parameters(conf)
         def main(a=4):
             return a
         self.assertTrue(main(b=5) == 4)
@@ -57,7 +57,7 @@ class TestWrapsKwargs(unittest.TestCase):
 
     def test_positional_arg(self):
         conf = dict(a=4)
-        @funconf.wraps_kwargs(conf)
+        @funconf.wraps_parameters(conf)
         def main(a, b):
             self.assertEqual(conf, {'a':a})
         main(4, 5)
@@ -65,7 +65,7 @@ class TestWrapsKwargs(unittest.TestCase):
 
     def test_positional_keyword_arg(self):
         conf = dict(a=4)
-        @funconf.wraps_kwargs(conf)
+        @funconf.wraps_parameters(conf)
         def main(b, a=2):
             return a
         self.assertEqual(main(-1, 33), 33)
@@ -76,7 +76,7 @@ class TestWrapsKwargs(unittest.TestCase):
 
     def test_arg_in_kwarg(self):
         conf = dict(blob=4)
-        @funconf.wraps_kwargs(conf)
+        @funconf.wraps_parameters(conf)
         def main(blob=3):
             return blob
         self.assertEqual(main(), 4)
@@ -84,7 +84,7 @@ class TestWrapsKwargs(unittest.TestCase):
 
     def test_hide_var_keyword(self):
         conf = dict()
-        @funconf.wraps_kwargs(conf, hide_var_keyword=True)
+        @funconf.wraps_parameters(conf, hide_var_keyword=True)
         def main(a=3, **k):
             pass
         main(1)
@@ -93,7 +93,7 @@ class TestWrapsKwargs(unittest.TestCase):
 
     def test_show_var_keyword(self):
         conf = dict()
-        @funconf.wraps_kwargs(conf, hide_var_keyword=False)
+        @funconf.wraps_parameters(conf, hide_var_keyword=False)
         def main(b, a=3, *p, **k):
             pass
         main(1)
@@ -104,7 +104,7 @@ class TestWrapsKwargs(unittest.TestCase):
 
     def test_hide_var_positional(self):
         conf = dict()
-        @funconf.wraps_kwargs(conf, hide_var_positional=True)
+        @funconf.wraps_parameters(conf, hide_var_positional=True)
         def main(b, a=3, *p, **k):
             pass
         main(1)
@@ -113,7 +113,7 @@ class TestWrapsKwargs(unittest.TestCase):
 
     def test_show_var_positional(self):
         conf = dict()
-        @funconf.wraps_kwargs(conf, hide_var_positional=False)
+        @funconf.wraps_parameters(conf, hide_var_positional=False)
         def main(b, a=3, *p, **k):
             pass
         main(1)
