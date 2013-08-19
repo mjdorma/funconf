@@ -211,7 +211,7 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
             
             # Build the positional arguments. Override func's default values.
             ordered_args = OrderedDict()
-            for name, param in original_positional.items():
+            for name in original_positional:
                 if name in arguments:
                     ordered_args[name] = arguments[name]
                     if name in default_kwargs:
@@ -342,41 +342,52 @@ def lazy_string_cast(model_kwargs={}):
         else:
             return make_cast_func(cast_type, k, vtype)
 
+    class StrCast(dict):
+        def __call__(self, name, value):
+            if isinstance(value, basestring) and name in self:
+                return self[name](value)
+            else:
+                return value
+
     def decorator(func):
         sig = signature(func)
-        cast_ctrl = {}
         var_keyword, var_positional = '', '' 
+        positional = []
+        # Build the StrCast object
+        str_cast = StrCast() 
         for name, param in sig.parameters.items():
             if param.default != param.empty and \
                     not isinstance(param.default, basestring):
-                cast_ctrl[name] = cast_factory(name, param.default)
+                str_cast[name] = cast_factory(name, param.default)
             if param.kind == param.VAR_KEYWORD:
                 var_keyword = name
             elif param.kind == param.VAR_POSITIONAL:
                 var_positional = name
+            elif param.kind == param.POSITIONAL_OR_KEYWORD:
+                positional.append(name)
         for name, value in model_kwargs.items():
             if not isinstance(value, basestring):
-                cast_ctrl[name] = cast_factory(name, value)
+                str_cast[name] = cast_factory(name, value)
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             arguments = OrderedDict(sig.bind(*args, **kwargs).arguments)
-            # build keyword arguments            
-            kwargs = arguments.pop(var_keyword, {})
-            for name, value in kwargs.items():
-                if isinstance(value, basestring) and name in cast_ctrl:
-                    cast_func = cast_ctrl[name]
-                    kwargs[name] = cast_func(value)
-            # build positional arguments
-            args = []
-            for name, value in arguments.items():
+            # Cast the function's positional arguments.
+            ordered_args = OrderedDict()
+            for name in positional:
+                ordered_args[name] = str_cast(name, arguments[name])
+            args = list(ordered_args.values())
+            # Cast the function's keyword arguments.
+            kwargs = {}
+            for name in set(arguments).difference(ordered_args):
+                value = arguments[name]
                 if name == var_positional:
                     args.extend(value)
+                elif name == var_keyword: 
+                    for k, v in value.items():
+                        kwargs[k] = str_cast(k, v)
                 else:
-                    if isinstance(value, basestring) and name in cast_ctrl:
-                        cast_func = cast_ctrl[name]
-                        value = cast_func(value)
-                    args.append(value)
+                    kwargs[name] = str_cast(name, value)
             return func(*args, **kwargs)
         return wrapper
 

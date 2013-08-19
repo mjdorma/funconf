@@ -163,6 +163,7 @@ class TestConfig(unittest.TestCase):
         def func(**k):
             self.assertFalse(k['foo_bar'])
         func()
+        func(foo_bar='f')
 
     def test_config_section_decorate(self):
         config = funconf.Config()
