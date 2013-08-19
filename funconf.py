@@ -129,7 +129,7 @@ import yaml
 
 
 def wraps_parameters(default_kwargs, hide_var_keyword=False,
-                                 hide_var_positional=False):
+                                     hide_var_positional=False):
     """Decorate a function to define and extend its positional and keyword
     variables.
         
@@ -235,15 +235,12 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
                 elif name == var_keyword: 
                     for k, v in value.items():
                         kwargs[k] = v
-                        if k in default_kwargs:
-                            updates[name] = v
                 elif name == '_hidden_kwargs':
-                    # Keyword arguments not defined in the wrapped func can be
-                    # updated into our configuration. 
-                    for k, v in value.items():
-                        if k in default_kwargs:
-                            updates[name] = v
+                    # Ignore any default value are defined as keyword only 
+                    # parameters when building the wrapper function sig. 
+                    pass
                 else:
+                    # Update keyword only values
                     if name in default_kwargs:
                         updates[name] = value
                     kwargs[name] = value
