@@ -14,7 +14,7 @@ except ImportError:
 import funconf
 
 
-class TestWrapsKwargs(unittest.TestCase):
+class TestWrapsParameters(unittest.TestCase):
 
     def test_wrapped(self):
         kwargs = dict(a=1)
@@ -106,8 +106,9 @@ class TestWrapsKwargs(unittest.TestCase):
         conf = dict()
         @funconf.wraps_parameters(conf, hide_var_positional=True)
         def main(b, a=3, *p, **k):
-            pass
-        main(1)
+            return p
+        p = main(1, 2, 3)
+        self.assertEqual(p, (3,))
         sig = signature(main)
         self.assertTrue('p' not in sig.parameters)
 
@@ -115,8 +116,9 @@ class TestWrapsKwargs(unittest.TestCase):
         conf = dict()
         @funconf.wraps_parameters(conf, hide_var_positional=False)
         def main(b, a=3, *p, **k):
-            pass
-        main(1)
+            return p 
+        p = main(1, 2, 3)
+        self.assertEqual(p, (3,))
         sig = signature(main)
         self.assertTrue('p' in sig.parameters)
         k = sig.parameters['p']

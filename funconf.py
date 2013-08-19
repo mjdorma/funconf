@@ -163,10 +163,11 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
     def decorator(func):
         # Build new signature.
         original_sig = signature(func)
-        var_keyword = False 
+        var_keyword = '' 
         var_positional = '' 
         parameters = OrderedDict()
         # Add positional arguments and keywords first.
+        original_positional = OrderedDict()
         for name, param in original_sig.parameters.items():
             if param.kind == param.VAR_KEYWORD:
                 var_keyword = name
@@ -177,6 +178,7 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
                 param = Parameter(name, param.POSITIONAL_OR_KEYWORD,
                                         default=default)
                 parameters[name] = param
+                original_positional[name] = param
         # Add var positional.
         _var_args_name = var_positional if var_positional else '_hidden_args'
         parameters[_var_args_name] = Parameter(_var_args_name, 
@@ -208,7 +210,22 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
             kwargs = {}
             args = []
             updates = {}
-            for name, value in arguments.items():
+            
+            # Build our positional arguments first.
+            ordered_args = OrderedDict()
+            for name, param in original_positional.items():
+                if name in arguments:
+                    ordered_args[name] = arguments[name]
+                    if name in default_kwargs:
+                        updates[name] = arguments[name]
+                elif name in default_kwargs:
+                    ordered_args[name] = default_kwargs[name]
+                    updates[name] = default_kwargs[name]
+            
+            # Now handle the keyword only and var arguments
+            args = ordered_args.values()
+            for name in set(arguments).difference(ordered_args):
+                value = arguments[name]
                 if name == var_positional:
                     args.extend(value)
                 elif name == '_hidden_args':
@@ -230,6 +247,7 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
                     if name in default_kwargs:
                         updates[name] = value
                     kwargs[name] = value
+
             default_kwargs.update(updates)
             # Override func's default keyword values.
             for name in override_defaults.difference(updates):
