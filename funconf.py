@@ -223,7 +223,7 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
                     updates[name] = default_kwargs[name]
             
             # Now handle the keyword only and var arguments
-            args = ordered_args.values()
+            args = list(ordered_args.values())
             for name in set(arguments).difference(ordered_args):
                 value = arguments[name]
                 if name == var_positional:
