@@ -154,6 +154,10 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
 
     :param default_kwargs: kwargs to be fix into the wrapped function.
     :type default_kwargs: mutable mapping
+    :param hide_var_keyword: hide the variable keyword parameter.
+    :type hide_var_keyword: Boolean value default True.
+    :param hide_var_arguments: hide the variable keyword parameter.
+    :type hide_var_arguments: Boolean value default True.
     :rtype: decorated function.
     """
     def decorator(func):
