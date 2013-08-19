@@ -124,13 +124,6 @@ class TestWrapsParameters(unittest.TestCase):
         k = sig.parameters['p']
         self.assertEqual(k.kind, k.VAR_POSITIONAL)
 
-    def test_hidden_args_and_kwargs(self):
-        @funconf.wraps_parameters({})
-        def main():
-            pass
-        main(3, 5)
-        main(foo=4)
-
     def test_wraps_wrapper(self):
         conf_1 = dict(a=5, b=2)
         conf_2 = dict(a=4)
@@ -141,8 +134,8 @@ class TestWrapsParameters(unittest.TestCase):
         self.assertEqual(inner(), 5)
         self.assertEqual(inner(6), 6)
         self.assertEqual(inner(a=3), 3)
-        self.assertEqual(inner(1, 2, 3, 4), 1)
-        self.assertEqual(inner(11, 2, b=4), 11)
+        self.assertEqual(inner(1, b=2), 1)
+        self.assertEqual(inner(11, b=4), 11)
         self.assertEqual(conf_1, dict(a=11, b=4))
         self.assertEqual(conf_2, dict(a=11))
 

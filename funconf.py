@@ -179,9 +179,9 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
                     parameters[name] = param
                     original_positional[name] = param
         # Add var positional.
-        _var_args_name = var_positional if var_positional else '_hidden_args'
-        parameters[_var_args_name] = Parameter(_var_args_name, 
-                                               Parameter.VAR_POSITIONAL)
+        if var_positional:
+            parameters[var_positional] = Parameter(var_positional, 
+                                                   Parameter.VAR_POSITIONAL)
         # Add extracted keyword_only values
         parameters.update(keyword_only)
         # Add remainder defualt_kwargs as keyword only variables.
@@ -190,16 +190,16 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
                 param = Parameter(name, Parameter.KEYWORD_ONLY, default=value)
                 parameters[name] = param
         # Add var keyword.
-        _var_kwargs_name = var_keyword if var_keyword else '_hidden_kwargs'
-        parameters[_var_kwargs_name] = Parameter(_var_kwargs_name, 
-                                               Parameter.VAR_KEYWORD)
+        if var_keyword:
+            parameters[var_keyword] = Parameter(var_keyword,
+                                                Parameter.VAR_KEYWORD)
         # Build our inner wrapper signature.
         wrapper_sig = original_sig.replace(parameters=parameters.values())
         # Remove cloaked var arguments.
-        if hide_var_positional:
-            parameters.pop(_var_args_name)
-        if hide_var_keyword:
-            parameters.pop(_var_kwargs_name)
+        if var_positional and hide_var_positional:
+            parameters.pop(var_positional)
+        if var_keyword and hide_var_keyword:
+            parameters.pop(var_keyword)
         cloak_sig = original_sig.replace(parameters=parameters.values())
 
         # Wrapper function.
@@ -228,17 +228,9 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
                 value = arguments[name]
                 if name == var_positional:
                     args.extend(value)
-                elif name == '_hidden_args':
-                    # We can't update config with positional arguments that
-                    # are not intended for the wrapped func.  
-                    pass
                 elif name == var_keyword: 
                     for k, v in value.items():
                         kwargs[k] = v
-                elif name == '_hidden_kwargs':
-                    # Ignore any default value are defined as keyword only 
-                    # parameters when building the wrapper function sig. 
-                    pass
                 else:
                     # Update keyword only values
                     if name in default_kwargs:
