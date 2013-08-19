@@ -167,7 +167,6 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
         var_positional = '' 
         parameters = OrderedDict()
         original_positional = OrderedDict()
-        keyword_only = OrderedDict()
         # Add positional arguments and keywords first.
         for name, param in original_sig.parameters.items():
             if param.kind == param.VAR_KEYWORD:
@@ -177,17 +176,12 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
             else:
                 default = default_kwargs.get(name, param.default)
                 param = Parameter(name, param.kind, default=default)
-                if param.kind == param.KEYWORD_ONLY:
-                    keyword_only[name] = param
-                else:
-                    parameters[name] = param
-                    original_positional[name] = param
+                parameters[name] = param
+                original_positional[name] = param
         # Add var positional.
         if var_positional:
             parameters[var_positional] = Parameter(var_positional, 
                                                    Parameter.VAR_POSITIONAL)
-        # Add extracted keyword_only values
-        parameters.update(keyword_only)
         # Add remainder defualt_kwargs as keyword only variables.
         for name, value in default_kwargs.items():
             if name not in parameters:
