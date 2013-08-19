@@ -3,11 +3,11 @@
 
 To simplify the management of function default keyword argument values
 :py:mod:`funconf` introduces two new decorators. The first decorator 
-:py:func:`wraps_parameters` makes it trivial to dynamically define the default
-kwargs for a function.  The second decorator :py:func:`lazy_string_cast`
-automatically casts *basestring* values to the type of the keyword default
-values found in the function it is wrapping and the type of the values found in
-the *key:value* object passed into its constructor. 
+:py:func:`wraps_parameters` makes it trivial to dynamically define the
+default values of parameters to a function.  The second decorator
+:py:func:`lazy_string_cast` automatically casts *basestring* values to the type
+of the keyword default values found in the function it is wrapping and the type
+of the values found in the *key:value* object passed into its constructor. 
 
 For configuration, :py:mod:`funconf` borrows from concepts discussed in
 Python's core library *ConfigParser*.  A configuration consists of sections
@@ -109,7 +109,7 @@ used as a decorator to a function too. Here is an example::
 
 """
 import functools
-import inspect
+from inspect import isfunction, ismethod 
 from collections import MutableMapping
 try:
     from collections import OrderedDict 
@@ -130,31 +130,27 @@ import yaml
 
 def wraps_parameters(default_kwargs, hide_var_keyword=False,
                                  hide_var_positional=False):
-    """Decorate a function to define and extend its default keyword argument
-    values.
+    """Decorate a function to define and extend its positional and keyword
+    variables.
         
-    The following example will redefine myfunc to have default kwargs of a=4
-    and b=2:: 
+    The following example will redefine myfunc to have defaults of a=4 and b=3::
 
-        mydict = {a=4, b=2}
+        mydict = {a=4, b=3}
         @wraps_parameters(mydict)
-        def myfunc(a=2, **k):
+        def myfunc(a, b=2):
             pass
 
     The *default_kwargs* object needs to satisfy the *MutableMapping* interface
     definition. When a wrapped function is called the following transforms
     occur over *kwargs* before it is passed into the wrapped function:
 
-        1. *default_kwargs* is updated with the input parameters.
-        2. The functions default keyword arguments that were not in *kwargs*
-           and are defined by *default_kwargs* will be copied into *kwargs*
-           from the *default_kwargs* object.
-        3. If the wrapped function has a variable keyword argument defined 
+        1. *default_kwargs* is updated with new input parameters.
+        2. If the wrapped function has a variable keyword argument defined 
            (i.e ``**k``) then the keywords defined by *default_kwargs* that are
            not defined in *kwargs* will be copied into *kwargs*.
-        4. If the wrapped function had no variable keyword argument defined,
-           then the values found in *kwargs* that are no in the wrapped
-           function's keyword argument list  will be popped from *kwargs*.
+        3. If the wrapped function had no variable keyword argument defined,
+           then the keyword input parameters that don't belong to the wrapped
+           function's parameters list will be discarded.
 
     :param default_kwargs: kwargs to be fix into the wrapped function.
     :type default_kwargs: mutable mapping
@@ -167,6 +163,7 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
         var_positional = '' 
         parameters = OrderedDict()
         original_positional = OrderedDict()
+        keyword_only = OrderedDict()
         # Add positional arguments and keywords first.
         for name, param in original_sig.parameters.items():
             if param.kind == param.VAR_KEYWORD:
@@ -176,12 +173,17 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
             else:
                 default = default_kwargs.get(name, param.default)
                 param = Parameter(name, param.kind, default=default)
-                parameters[name] = param
-                original_positional[name] = param
+                if param.kind == param.KEYWORD_ONLY:
+                    keyword_only[name] = param
+                else:
+                    parameters[name] = param
+                    original_positional[name] = param
         # Add var positional.
         _var_args_name = var_positional if var_positional else '_hidden_args'
         parameters[_var_args_name] = Parameter(_var_args_name, 
                                                Parameter.VAR_POSITIONAL)
+        # Add extracted keyword_only values
+        parameters.update(keyword_only)
         # Add remainder defualt_kwargs as keyword only variables.
         for name, value in default_kwargs.items():
             if name not in parameters:
@@ -250,7 +252,8 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
             if var_keyword:
                 # Add default_kwargs keyword values not defined in kwargs.
                 for k in set(default_kwargs).difference(kwargs):
-                    kwargs[k] = default_kwargs[k]
+                    if k not in original_positional:
+                        kwargs[k] = default_kwargs[k]
             else:
                 # Remove kwargs that func doesn't have defined.
                 for k in set(kwargs).difference(function_defaults):
@@ -264,9 +267,9 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
     return decorator
 
 
-def lazy_string_cast(model_kwargs={}):
+def lazy_string_cast(model_parameters={}):
     """Type cast string input values if they differ from the type of the
-    default value found in *model_kwargs*.
+    default value found in *model_parameters*.
     
     The following list details how each type is handled:
 
@@ -301,8 +304,8 @@ def lazy_string_cast(model_kwargs={}):
         def main(a=4, b=[4, 2, 55]):
             pass
 
-    :param model_kwargs: kwargs to model default type values and keys from.
-    :type model_kwargs: mutable mapping
+    :param model_parameters: kwargs to model default type values and keys from.
+    :type model_parameters: mutable mapping
     :rtype: decorated function.
     """
     def cast_type_raise(vtype, key, value):
@@ -365,7 +368,7 @@ def lazy_string_cast(model_kwargs={}):
                 var_positional = name
             elif param.kind == param.POSITIONAL_OR_KEYWORD:
                 positional.append(name)
-        for name, value in model_kwargs.items():
+        for name, value in model_parameters.items():
             if not isinstance(value, basestring):
                 str_cast[name] = cast_factory(name, value)
 
@@ -389,10 +392,11 @@ def lazy_string_cast(model_kwargs={}):
                 else:
                     kwargs[name] = str_cast(name, value)
             return func(*args, **kwargs)
+        wrapper.__signature__ = sig
         return wrapper
 
-    if inspect.isfunction(model_kwargs) or inspect.ismethod(model_kwargs):
-        func, model_kwargs = model_kwargs, {}
+    if isfunction(model_parameters) or ismethod(model_parameters):
+        func, model_parameters= model_parameters, {}
         return decorator(func)
     else:
         return decorator

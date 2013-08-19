@@ -131,6 +131,20 @@ class TestWrapsParameters(unittest.TestCase):
         main(3, 5)
         main(foo=4)
 
+    def test_wrapping_keyword_only(self):
+        conf_1 = dict(a=5, b=2)
+        conf_2 = dict(a=4)
+        @funconf.wraps_parameters(conf_1)
+        @funconf.wraps_parameters(conf_2)
+        def inner(a):
+            return a
+        self.assertEqual(inner(), 5)
+        self.assertEqual(inner(6), 6)
+        self.assertEqual(inner(a=3), 3)
+        self.assertEqual(inner(1, 2, 3, 4), 1)
+        self.assertEqual(inner(11, 2, b=4), 11)
+        self.assertEqual(conf_1, dict(a=11, b=4))
+        self.assertEqual(conf_2, dict(a=11))
 
 
 class TestLazyStringCast(unittest.TestCase):
@@ -223,3 +237,10 @@ class TestLazyStringCast(unittest.TestCase):
         self.assertEqual(a, (65,'hi'))
         self.assertEqual(k, {'moo':'24'})
 
+    def test_wraps_wrapper(self):
+        @funconf.lazy_string_cast(dict(a=2))
+        @funconf.lazy_string_cast(dict(b=2))
+        def main(a, b):
+            return a, b
+        r = main('4', '5')
+        self.assertEqual(r, (4, 5))
