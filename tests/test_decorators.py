@@ -124,6 +124,13 @@ class TestWrapsParameters(unittest.TestCase):
         k = sig.parameters['p']
         self.assertEqual(k.kind, k.VAR_POSITIONAL)
 
+    def test_hidden_args_and_kwargs(self):
+        @funconf.wraps_parameters({})
+        def main():
+            pass
+        main(3, 5)
+        main(foo=4)
+
 
 
 class TestLazyStringCast(unittest.TestCase):

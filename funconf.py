@@ -166,8 +166,8 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
         var_keyword = '' 
         var_positional = '' 
         parameters = OrderedDict()
-        # Add positional arguments and keywords first.
         original_positional = OrderedDict()
+        # Add positional arguments and keywords first.
         for name, param in original_sig.parameters.items():
             if param.kind == param.VAR_KEYWORD:
                 var_keyword = name
@@ -175,15 +175,14 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
                 var_positional = name
             else:
                 default = default_kwargs.get(name, param.default)
-                param = Parameter(name, param.POSITIONAL_OR_KEYWORD,
-                                        default=default)
+                param = Parameter(name, param.kind, default=default)
                 parameters[name] = param
                 original_positional[name] = param
         # Add var positional.
         _var_args_name = var_positional if var_positional else '_hidden_args'
         parameters[_var_args_name] = Parameter(_var_args_name, 
                                                Parameter.VAR_POSITIONAL)
-        # Add remainder defualt_kwargs as keyword only variables .
+        # Add remainder defualt_kwargs as keyword only variables.
         for name, value in default_kwargs.items():
             if name not in parameters:
                 param = Parameter(name, Parameter.KEYWORD_ONLY, default=value)
@@ -192,7 +191,7 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
         _var_kwargs_name = var_keyword if var_keyword else '_hidden_kwargs'
         parameters[_var_kwargs_name] = Parameter(_var_kwargs_name, 
                                                Parameter.VAR_KEYWORD)
-        # Build our inner wrapper signature .
+        # Build our inner wrapper signature.
         wrapper_sig = original_sig.replace(parameters=parameters.values())
         # Remove cloaked var arguments.
         if hide_var_positional:
@@ -208,10 +207,9 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
             # Build new kwargs and args.
             arguments = OrderedDict(wrapper_sig.bind(*args, **kwargs).arguments)
             kwargs = {}
-            args = []
             updates = {}
             
-            # Build our positional arguments first.
+            # Build the positional arguments. Override func's default values.
             ordered_args = OrderedDict()
             for name, param in original_positional.items():
                 if name in arguments:
@@ -249,9 +247,6 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
                     kwargs[name] = value
 
             default_kwargs.update(updates)
-            # Override func's default keyword values.
-            for name in override_defaults.difference(updates):
-                kwargs[name] = default_kwargs[name]
             if var_keyword:
                 # Add default_kwargs keyword values not defined in kwargs.
                 for k in set(default_kwargs).difference(kwargs):
