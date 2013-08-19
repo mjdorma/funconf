@@ -14,7 +14,7 @@ if VERSION == (2, 6):
 PYTHON3K = sys.version_info[0] > 2
 setup(
     name="funconf",
-    version='0.2.1',
+    version='0.2.2',
     py_modules=['funconf'],
     author="Michael Dorman",
     author_email="mjdorma@gmail.com",
