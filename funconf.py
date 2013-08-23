@@ -254,7 +254,7 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
     return decorator
 
 
-def lazy_string_cast(model_parameters={}):
+def lazy_string_cast(model_parameters={}, provide_defaults=False):
     """Type cast string input values if they differ from the type of the
     default value found in *model_parameters*.
     
@@ -293,6 +293,9 @@ def lazy_string_cast(model_parameters={}):
 
     :param model_parameters: kwargs to model default type values and keys from.
     :type model_parameters: mutable mapping
+    :param provide_defaults: If true, use model_parameters to default arguments
+                             which are empty.
+    :type provide_defaults: Boolean default False.
     :rtype: decorated function.
     """
     def cast_type_raise(vtype, key, value):
@@ -343,12 +346,19 @@ def lazy_string_cast(model_parameters={}):
         sig = signature(func)
         var_keyword, var_positional = '', '' 
         positional = []
+        parameters = []
         # Build the StrCast object
         str_cast = StrCast() 
         for name, param in sig.parameters.items():
             if param.default != param.empty and \
                     not isinstance(param.default, basestring):
                 str_cast[name] = cast_factory(name, param.default)
+                default = param.default
+            elif param.default == param.empty and name in model_parameters:
+                default = model_parameters[name]
+            else:
+                default = param.empty
+            parameters.append(Parameter(name, param.kind, default=default))
             if param.kind == param.VAR_KEYWORD:
                 var_keyword = name
             elif param.kind == param.VAR_POSITIONAL:
@@ -359,13 +369,22 @@ def lazy_string_cast(model_parameters={}):
             if not isinstance(value, basestring):
                 str_cast[name] = cast_factory(name, value)
 
+        if provide_defaults:
+            sig = sig.replace(parameters=parameters)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             arguments = OrderedDict(sig.bind(*args, **kwargs).arguments)
             # Cast the function's positional arguments.
             ordered_args = OrderedDict()
             for name in positional:
-                ordered_args[name] = str_cast(name, arguments[name])
+                if name in arguments:
+                    ordered_args[name] = str_cast(name, arguments[name])
+                elif name in model_parameters and provide_defaults:
+                    ordered_args[name] = model_parameters[name]
+                else:
+                    msg = "'%s' parameter lacking default value" % name
+                    raise TypeError(msg)
             args = list(ordered_args.values())
             # Cast the function's keyword arguments.
             kwargs = {}
@@ -522,7 +541,7 @@ class ConfigSection(MutableMapping):
         wrapped = wraps_parameters(self, hide_var_positional=True,
                                      hide_var_keyword=True)(func)
         if lazy:
-            return lazy_string_cast(self)(wrapped) 
+            return lazy_string_cast(self, provide_defaults=True)(wrapped) 
         else:
             return wrapped
 
@@ -723,7 +742,7 @@ class Config(MutableMapping):
         wrapped = wraps_parameters(self, hide_var_positional=True,
                                      hide_var_keyword=True)(func)
         if lazy:
-            return lazy_string_cast(self)(wrapped) 
+            return lazy_string_cast(self, provide_defaults=True)(wrapped) 
         else:
             return wrapped
 

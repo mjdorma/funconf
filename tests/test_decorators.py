@@ -245,3 +245,15 @@ class TestLazyStringCast(unittest.TestCase):
             return a, b
         r = main('4', '5')
         self.assertEqual(r, (4, 5))
+
+    def test_wrapped_goes_default(self):
+        @funconf.lazy_string_cast(dict(b=2), provide_defaults=True)
+        def main(a, b):
+            return a
+        self.assertEqual(main(2), 2)
+
+    def test_wrapped_no_defaults(self):
+        @funconf.lazy_string_cast(dict(b=2), provide_defaults=False)
+        def main(a, b):
+            return a
+        self.assertRaises(TypeError, main, 2)

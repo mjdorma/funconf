@@ -195,5 +195,12 @@ class TestConfig(unittest.TestCase):
             return foo 
         self.assertEqual(func(foo="y"), True)
 
+    def test_wrapped_goes_default(self):
+        config = funconf.Config()
+        config.set('foo', 'car', 3)
+        @config.foo
+        def main(bar, car):
+            return bar
+        self.assertEqual(main(2), 2)
 
 
