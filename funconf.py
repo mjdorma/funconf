@@ -254,7 +254,7 @@ def wraps_parameters(default_kwargs, hide_var_keyword=False,
     return decorator
 
 
-def lazy_string_cast(model_parameters={}, provide_defaults=False):
+def lazy_string_cast(model_parameters={}, provide_defaults=True):
     """Type cast string input values if they differ from the type of the
     default value found in *model_parameters*.
     
@@ -295,7 +295,7 @@ def lazy_string_cast(model_parameters={}, provide_defaults=False):
     :type model_parameters: mutable mapping
     :param provide_defaults: If true, use model_parameters to default arguments
                              which are empty.
-    :type provide_defaults: Boolean default False.
+    :type provide_defaults: Boolean default True.
     :rtype: decorated function.
     """
     def cast_type_raise(vtype, key, value):
@@ -380,11 +380,8 @@ def lazy_string_cast(model_parameters={}, provide_defaults=False):
             for name in positional:
                 if name in arguments:
                     ordered_args[name] = str_cast(name, arguments[name])
-                elif name in model_parameters and provide_defaults:
-                    ordered_args[name] = model_parameters[name]
                 else:
-                    msg = "'%s' parameter lacking default value" % name
-                    raise TypeError(msg)
+                    ordered_args[name] = model_parameters[name]
             args = list(ordered_args.values())
             # Cast the function's keyword arguments.
             kwargs = {}
