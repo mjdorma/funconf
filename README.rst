@@ -1,7 +1,7 @@
 funconf - Function Configuration
 ********************************
 
-funconf simplifies the management of keyword argument default values by
+funconf simplifies the management of function argument default values by
 seamlessly integrating configuration files into mapping objects which can
 decorate a function to set or override its default values.  
 
