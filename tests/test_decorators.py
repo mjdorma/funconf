@@ -261,3 +261,11 @@ class TestLazyStringCast(unittest.TestCase):
         self.assertRaises(TypeError, main, 2)
         self.assertRaises(TypeError, main)
         self.assertRaises(TypeError, main, 2, 2, 2)
+
+    def test_use_funcs_defaults(self):
+        @funconf.lazy_string_cast
+        def main(a=False):
+            return a
+        self.assertEqual(main(), False)
+
+

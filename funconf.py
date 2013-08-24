@@ -347,17 +347,19 @@ def lazy_string_cast(model_parameters={}, provide_defaults=True):
         var_keyword, var_positional = '', '' 
         positional = []
         parameters = []
+        original_defaults = {}
         # Build the StrCast object
         str_cast = StrCast() 
         for name, param in sig.parameters.items():
-            if param.default != param.empty and \
-                    not isinstance(param.default, basestring):
-                str_cast[name] = cast_factory(name, param.default)
+            if param.default != param.empty:
+                if not isinstance(param.default, basestring):
+                    str_cast[name] = cast_factory(name, param.default)
+                original_defaults[name] = param.default
                 default = param.default
             elif param.default == param.empty and name in model_parameters:
                 default = model_parameters[name]
-            else:
-                default = param.empty
+            else: 
+                default = param.empty 
             parameters.append(Parameter(name, param.kind, default=default))
             if param.kind == param.VAR_KEYWORD:
                 var_keyword = name
@@ -380,8 +382,10 @@ def lazy_string_cast(model_parameters={}, provide_defaults=True):
             for name in positional:
                 if name in arguments:
                     ordered_args[name] = str_cast(name, arguments[name])
-                else:
+                elif provide_defaults and name in model_parameters:
                     ordered_args[name] = model_parameters[name]
+                else:
+                    ordered_args[name] = original_defaults[name]
             args = list(ordered_args.values())
             # Cast the function's keyword arguments.
             kwargs = {}
@@ -507,7 +511,8 @@ class ConfigSection(MutableMapping):
         self._dirty, d = False, self._dirty
         return d
 
-    def __call__(self, func=None, lazy=True):
+    def __call__(self, func=None, lazy=True, hide_var_positional=False,
+                                             hide_var_keyword=True):
         """The :py:class:`ConfigSection` object can be used as a function
         decorator.  
 
@@ -535,11 +540,16 @@ class ConfigSection(MutableMapping):
         """
         if func is None:
             return functools.partial(self, lazy=lazy)
-        wrapped = wraps_parameters(self, hide_var_positional=True,
-                                     hide_var_keyword=True)(func)
         if lazy:
+            inner_lazy = lazy_string_cast(provide_defaults=True)(func)
+            wrapped = wraps_parameters(self,
+                                 hide_var_positional=hide_var_positional,
+                                 hide_var_keyword=hide_var_keyword)(inner_lazy)
             return lazy_string_cast(self, provide_defaults=True)(wrapped) 
         else:
+            wrapped = wraps_parameters(self,
+                                 hide_var_positional=hide_var_positional,
+                                 hide_var_keyword=hide_var_keyword)(func)
             return wrapped
 
 
@@ -709,7 +719,8 @@ class Config(MutableMapping):
         section = self._sections[s]
         return section[option]
 
-    def __call__(self, func=None, lazy=True):
+    def __call__(self, func=None, lazy=True, hide_var_positional=False,
+                                             hide_var_keyword=True):
         """The :py:class:`Config` object can be used as a function decorator.  
         
         Applying this decorator to a function which takes variable kwargs will
@@ -736,11 +747,16 @@ class Config(MutableMapping):
         """
         if func is None:
             return functools.partial(self, lazy=lazy)
-        wrapped = wraps_parameters(self, hide_var_positional=True,
-                                     hide_var_keyword=True)(func)
         if lazy:
+            inner_lazy = lazy_string_cast(provide_defaults=True)(func)
+            wrapped = wraps_parameters(self,
+                                 hide_var_positional=hide_var_positional,
+                                 hide_var_keyword=hide_var_keyword)(inner_lazy)
             return lazy_string_cast(self, provide_defaults=True)(wrapped) 
         else:
+            wrapped = wraps_parameters(self,
+                                 hide_var_positional=hide_var_positional,
+                                 hide_var_keyword=hide_var_keyword)(func)
             return wrapped
 
 

@@ -203,4 +203,11 @@ class TestConfig(unittest.TestCase):
             return bar
         self.assertEqual(main(2), 2)
 
+    def test_lazy_cast_not_in_config(self):
+        config = funconf.Config()
+        @config
+        def main(foo=True):
+            return foo
+        self.assertTrue(main('t') is True)
+
 
