@@ -295,7 +295,7 @@ def lazy_string_cast(model_parameters={}, provide_defaults=True):
     :type model_parameters: mutable mapping
     :param provide_defaults: If true, use model_parameters to default arguments
                              which are empty.
-    :type provide_defaults: Boolean default True.
+    :type provide_defaults: Boolean value default True.
     :rtype: decorated function.
     """
     def cast_type_raise(vtype, key, value):

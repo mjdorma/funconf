@@ -11,7 +11,7 @@ Function Configuration module - :mod:`funconf`
 Code reference guide
 ====================
 
-.. autofunction:: funconf.wraps_kwargs
+.. autofunction:: funconf.wraps_parameters
 
 .. autofunction:: funconf.lazy_string_cast
 
