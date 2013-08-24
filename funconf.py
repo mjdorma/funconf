@@ -558,8 +558,8 @@ class Config(MutableMapping):
            through a standard implementation of the *MutableMapping* abstract
            type.
         3. When cast to a string it outputs YAML.
-        4. As a decorator it utilises the :py:func:`wraps_parameters` to change the
-           defaults of a variable kwargs function.  
+        4. As a decorator it utilises the :py:func:`wraps_parameters` to change
+           the defaults of a variable kwargs function.  
     """
 
     __slots__ = ('_sections', '_reserved', '_lookup', '_strict')
