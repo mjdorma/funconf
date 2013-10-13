@@ -210,4 +210,33 @@ class TestConfig(unittest.TestCase):
             return foo
         self.assertTrue(main('t') is True)
 
+    def test_positional_or_keyword_with_no_option(self):
+        #relates to issue #1 
+        config = funconf.Config()
+        config.set('foo', 'a', 3)
+        @config.foo
+        def bread(**k):
+            return k
+        self.assertRaises(TypeError, bread, 1)
+
+    def test_positional_or_keyword_with_var_args(self):
+        #relates to issue #1 
+        config = funconf.Config()
+        config.set('foo', 'a', 3)
+        @config.foo
+        def bread(*b, **k):
+            return b
+        a = bread(4)
+        self.assertEqual(a, (4, ))
+        @config.foo
+        def bread(a, **k):
+            return a
+        a = bread(4)
+        @config.foo
+        def bread(b, **k):
+            return b
+        a = bread(4)
+        self.assertEqual(a, 4)
+       
+
 
