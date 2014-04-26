@@ -185,25 +185,32 @@ class TestLazyStringCast(unittest.TestCase):
             return k
         self.assertTrue(main(a='blah')['a'] == 'blah')
 
+    def test_cast_list_paths(self):
+        @funconf.lazy_string_cast(dict(a=[]))
+        def main(**k):
+            return k
+        self.assertEqual(main(a='C:\\Windows\\System32 "foobar \\moo"')['a'],
+                               ['C:\\Windows\\System32', 'foobar \\moo'])
+
     def test_cast_list_int(self):
         @funconf.lazy_string_cast(dict(a=[1]))
         def main(**k):
             return k
-        self.assertTrue(main(a='111 222')['a'] == [111, 222])
+        self.assertEqual(main(a='111 222')['a'], [111, 222])
         self.assertRaises(ValueError, main, a='aaa')
 
     def test_cast_list_bool(self):
         @funconf.lazy_string_cast(dict(a=[True]))
         def main(**k):
             return k
-        self.assertTrue(main(a='False True')['a'] == [False, True])
+        self.assertEqual(main(a='False True')['a'], [False, True])
         self.assertRaises(ValueError, main, a='aaa')
 
     def test_cast_list_float(self):
         @funconf.lazy_string_cast(dict(a=[4.0]))
         def main(**k):
             return k
-        self.assertTrue(main(a='34.23 232.1')['a'] == [34.23, 232.1])
+        self.assertEqual(main(a='34.23 232.1')['a'], [34.23, 232.1])
         self.assertRaises(ValueError, main, a='aaa')
 
     def test_models_as_func_or_method(self):

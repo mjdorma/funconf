@@ -315,7 +315,8 @@ def lazy_string_cast(model_parameters={}, provide_defaults=True):
         return value
 
     def cast_list(inner_cast_func, key, value):
-        value = shlex.split(value)
+        value = shlex.split(value.replace("\\", "_windowsCompat_"))
+        value = [a.replace("_windowsCompat_", "\\") for a in value]
         if inner_cast_func is not None:
             value = [inner_cast_func(a) for a in value]
         return value
