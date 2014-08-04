@@ -624,7 +624,7 @@ class Config(MutableMapping):
         :param stream: the configuration to be loaded using ``yaml.load``.
         :type stream: stream object
         """
-        config = yaml.load(stream)
+        config = yaml.safe_load(stream)
         if not isinstance(config, dict):
             return
         for section, options in config.items():
